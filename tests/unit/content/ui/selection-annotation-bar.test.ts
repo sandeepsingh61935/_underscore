@@ -177,6 +177,92 @@ describe('SelectionAnnotationBar shell', () => {
     );
     ui.close();
   });
+
+  it('without onDelete renders only Add tags and Add notes', () => {
+    const ui = bar();
+    ui.open({ id: 'hl-1', range: rangeAt(rect(200, 220)), note: '', tags: [] });
+    const root = document.querySelector('[data-annotation-bar]')!.shadowRoot!;
+    const actions = [...root.querySelectorAll('button')].map((b) => b.textContent);
+    expect(actions).toEqual(['Add tags', 'Add notes']);
+    expect(root.querySelector('[aria-label="Delete"]')).toBeNull();
+    ui.close();
+  });
+
+  it('with onDelete renders Delete last with destructive styling', () => {
+    const ui = bar();
+    ui.open({
+      id: 'hl-1',
+      range: rangeAt(rect(200, 220)),
+      note: 'kept',
+      tags: ['css'],
+      onDelete: vi.fn(),
+    });
+    const root = document.querySelector('[data-annotation-bar]')!.shadowRoot!;
+    const actions = [...root.querySelectorAll('button')].map((b) => b.textContent);
+    expect(actions).toEqual(['Add tags', 'Add notes', 'Delete']);
+    expect(root.querySelector('[aria-label="Delete"]')?.classList.contains('danger')).toBe(true);
+    ui.close();
+  });
+
+  it('clicking Delete invokes onDelete and leaves close to the caller', async () => {
+    const onDelete = vi.fn().mockResolvedValue(undefined);
+    const ui = bar();
+    ui.open({
+      id: 'hl-1',
+      range: rangeAt(rect(200, 220)),
+      note: '',
+      tags: [],
+      onDelete,
+    });
+    const root = document.querySelector('[data-annotation-bar]')!.shadowRoot!;
+    (root.querySelector('[aria-label="Delete"]') as HTMLButtonElement).click();
+    await vi.waitFor(() => expect(onDelete).toHaveBeenCalledTimes(1));
+    expect(ui.isOpen()).toBe(true);
+    ui.close();
+  });
+
+  it('ignores repeated Delete clicks while a delete is in flight', async () => {
+    let release: () => void = () => {};
+    const onDelete = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        })
+    );
+    const ui = bar();
+    ui.open({
+      id: 'hl-1',
+      range: rangeAt(rect(200, 220)),
+      note: '',
+      tags: [],
+      onDelete,
+    });
+    const root = document.querySelector('[data-annotation-bar]')!.shadowRoot!;
+    const del = root.querySelector('[aria-label="Delete"]') as HTMLButtonElement;
+    del.click();
+    del.click();
+    expect(onDelete).toHaveBeenCalledTimes(1);
+    release();
+    await vi.waitFor(() => expect(del.disabled).toBe(false));
+    ui.close();
+  });
+
+  it('Delete is hidden while a tags/notes editor is open', () => {
+    const ui = bar();
+    ui.open({
+      id: 'hl-1',
+      range: rangeAt(rect(200, 220)),
+      note: '',
+      tags: [],
+      onDelete: vi.fn(),
+    });
+    const root = document.querySelector('[data-annotation-bar]')!.shadowRoot!;
+    (root.querySelector('[aria-label="Add tags"]') as HTMLButtonElement).click();
+    expect(root.querySelector('[aria-label="Delete"]')).toBeNull();
+    (root.querySelector('[aria-label="Back"]') as HTMLButtonElement).click();
+    expect(root.querySelector('[aria-label="Delete"]')).not.toBeNull();
+    ui.close();
+  });
 });
 
 describe('SelectionAnnotationBar save', () => {

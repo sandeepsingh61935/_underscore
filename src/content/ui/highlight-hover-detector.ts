@@ -1,8 +1,8 @@
 /**
  * Highlight Hover Detector
  *
- * Detects hover over painted highlights for delete-icon chrome.
- * Geometry comes from HighlightPainter (first-line edges for exterior icon).
+ * Detects hover over painted highlights.
+ * Geometry comes from HighlightPainter (first-line edges for hover anchors).
  */
 
 import type { HighlightPainter } from '@/content/paint/highlight-painter';

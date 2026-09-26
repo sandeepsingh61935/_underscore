@@ -7,7 +7,6 @@
  * - Mode Manager: Delegates behavior to current mode (Basic/Pro/10x-Pro)
  */
 
-import '@/content/ui/delete-icon.css'; // Phase 4.3: Delete icon styles
 // Sole on-page paint styles (overlay rects). WXT injects as content.css.
 import '@/content/styles/highlight-paint.css';
 
@@ -226,7 +225,7 @@ export default defineContentScript({
           .catch(() => {});
       };
 
-      // Click detector: plain click toggles delete-icon pin; Ctrl+Click deletes
+      // Click detector: plain click opens the actions pill; Ctrl+Click deletes
       const { HighlightDOMHitTester } =
         await import('@/content/ui/highlight-dom-hit-tester');
       const hitTester = new HighlightDOMHitTester(repositoryFacade);
@@ -234,27 +233,10 @@ export default defineContentScript({
       const clickDetector = new HighlightClickDetector(eventBus, hitTester);
       clickDetector.init();
 
-      // Delete icon: click-to-pin (not hover) so moving to the exterior icon keeps it
-      const { DeleteIconOverlay } = await import('@/content/ui/delete-icon-overlay');
-      const { HIGHLIGHT_DELETE_ICON_TOGGLE, HIGHLIGHT_DELETE_ICON_DISMISS } =
+      const { HIGHLIGHT_ACTIONS_OPEN } =
         await import('@/content/highlight-click-detector');
 
-      const deleteIconOverlay = new DeleteIconOverlay(
-        modeManager,
-        repositoryFacade,
-        logger,
-        messageBus
-      );
-
-      eventBus.on(HIGHLIGHT_DELETE_ICON_TOGGLE, (event: { highlightId: string }) => {
-        deleteIconOverlay.togglePin(event.highlightId);
-      });
-
-      eventBus.on(HIGHLIGHT_DELETE_ICON_DISMISS, () => {
-        deleteIconOverlay.dismissPin();
-      });
-
-      logger.info('[DELETE-ICON] Click-to-pin delete icon wired');
+      logger.info('[ACTIONS-PILL] Click-to-open actions pill wired');
 
       // ===== EVENT SOURCING: Wire Event → Mode Handlers (Delegate Pattern) =====
       // Observer Pattern: Modes listen to domain events and decide how to handle
@@ -451,11 +433,18 @@ export default defineContentScript({
           });
           if (barId && event.selection.rangeCount > 0) {
             const stored = repositoryFacade.get(barId);
+            const deleteConfig = modeManager.getCurrentMode().getDeletionConfig();
             annotationBar.open({
               id: barId,
               range: event.selection.getRangeAt(0),
               note: typeof stored?.metadata?.notes === 'string' ? stored.metadata.notes : '',
               tags: Array.isArray(stored?.metadata?.tags) ? stored.metadata.tags : [],
+              // Same on-the-spot Delete as the click pill: a fresh highlight can
+              // be removed without clicking the underscore again. Omitted when
+              // the mode disables the delete affordance.
+              onDelete: deleteConfig?.showDeleteIcon
+                ? () => deleteHighlightFromPill(barId, 'selection pill')
+                : undefined,
             });
           }
 
@@ -480,12 +469,19 @@ export default defineContentScript({
         await import('@/content/services/content-highlight-delete-flow');
       const contentDeleteClient = new ContentHighlightDeleteClient(messageBus);
 
-      eventBus.on<HighlightClickedEvent>(EventName.HIGHLIGHT_CLICKED, async (event) => {
+      // Shared pill delete path: selection pill and click pill delete through
+      // this one flow (mode config honored, pill closed + count broadcast on
+      // success, toasts handled inside the flow). Referenced by handlers
+      // registered above; runs only on user gestures after setup completes.
+      const deleteHighlightFromPill = async (
+        highlightId: string,
+        source: string
+      ): Promise<void> => {
         const mode = modeManager.getCurrentMode();
         const config = mode.getDeletionConfig();
         if (!config?.showDeleteIcon) return;
 
-        const outcome = await performContentHighlightDelete(event.highlightId, {
+        const outcome = await performContentHighlightDelete(highlightId, {
           deleteClient: contentDeleteClient,
           modeManager,
           getSnapshot: (id) => modeManager.getHighlight(id),
@@ -493,12 +489,49 @@ export default defineContentScript({
         });
 
         if (outcome === 'deleted') {
-          logger.info('Highlight removed via Ctrl+Click', { id: event.highlightId });
-          if (annotationBar.highlightId() === event.highlightId) {
+          logger.info(`Highlight removed via ${source}`, { id: highlightId });
+          if (annotationBar.highlightId() === highlightId) {
             annotationBar.close();
           }
           broadcastCount();
         }
+      };
+
+      eventBus.on<HighlightClickedEvent>(EventName.HIGHLIGHT_CLICKED, async (event) => {
+        await deleteHighlightFromPill(event.highlightId, 'Ctrl+Click');
+      });
+
+      // ===== Handle highlight click: open the 3-action pill =====
+      eventBus.on(HIGHLIGHT_ACTIONS_OPEN, (event: { highlightId: string }) => {
+        // Second click on the same highlight dismisses its pill.
+        if (annotationBar.isOpen() && annotationBar.highlightId() === event.highlightId) {
+          annotationBar.close();
+          return;
+        }
+
+        const stored =
+          repositoryFacade.get(event.highlightId) ??
+          modeManager.getHighlight(event.highlightId);
+        const serialized = stored?.ranges?.[0];
+        const range = serialized ? deserializeRange(serialized) : null;
+        if (!stored || !range) {
+          logger.warn('Click pill: no resolvable range', { id: event.highlightId });
+          return;
+        }
+
+        const mode = modeManager.getCurrentMode();
+        const config = mode.getDeletionConfig();
+        const metadata = stored && 'metadata' in stored ? stored.metadata : undefined;
+        annotationBar.open({
+          id: event.highlightId,
+          range,
+          note: typeof metadata?.notes === 'string' ? metadata.notes : '',
+          tags: Array.isArray(metadata?.tags) ? metadata.tags : [],
+          // Omit Delete when the mode disables the delete affordance.
+          onDelete: config?.showDeleteIcon
+            ? () => deleteHighlightFromPill(event.highlightId, 'actions pill')
+            : undefined,
+        });
       });
 
       // ===== Handle clear selection (double-click) =====

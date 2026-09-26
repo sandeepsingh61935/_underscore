@@ -24,6 +24,19 @@ export interface SelectionAnnotationBarDeps {
 const BAR_GAP_PX = 8;
 const BAR_FALLBACK_HEIGHT_PX = 44;
 
+export interface AnnotationBarOpenArgs {
+  id: string;
+  range: Range;
+  note: string;
+  tags: string[];
+  /**
+   * Delete handler for the click-on-existing-highlight flow. When present,
+   * the actions row gains a destructive Delete button; the selection flow
+   * omits it so Delete never appears before a highlight exists.
+   */
+  onDelete?: () => void | Promise<void>;
+}
+
 export class SelectionAnnotationBar {
   private host: HTMLElement | null = null;
   private mount: HTMLElement | null = null;
@@ -31,6 +44,8 @@ export class SelectionAnnotationBar {
   private id: string | null = null;
   private savedNote = '';
   private savedTags: string[] = [];
+  private onDelete: (() => void | Promise<void>) | null = null;
+  private deleting = false;
   private current: AnnotationBarMode = 'closed';
   private saving = false;
   private readonly onKeydown = (event: KeyboardEvent): void => {
@@ -50,12 +65,13 @@ export class SelectionAnnotationBar {
 
   constructor(private readonly deps: SelectionAnnotationBarDeps) {}
 
-  open(args: { id: string; range: Range; note: string; tags: string[] }): void {
+  open(args: AnnotationBarOpenArgs): void {
     this.close();
     this.id = args.id;
     this.range = args.range;
     this.savedNote = args.note;
     this.savedTags = [...args.tags];
+    this.onDelete = args.onDelete ?? null;
     this.host = document.createElement('div');
     this.host.setAttribute('data-annotation-bar', '');
     this.host.style.position = 'fixed';
@@ -87,8 +103,10 @@ export class SelectionAnnotationBar {
     this.mount = null;
     this.range = null;
     this.id = null;
+    this.onDelete = null;
     this.current = 'closed';
     this.saving = false;
+    this.deleting = false;
   }
 
   isOpen(): boolean {
@@ -124,16 +142,39 @@ export class SelectionAnnotationBar {
 
   private showActions(): void {
     this.saving = false;
+    this.deleting = false;
     this.current = 'actions';
     const mount = this.ensureMount();
     mount.className = 'bar';
     mount.setAttribute('role', 'toolbar');
     mount.setAttribute('aria-label', 'Highlight');
-    mount.replaceChildren(
+    const buttons = [
       this.action('Add tags', () => this.showTags()),
-      this.action('Add notes', () => this.showNotes())
-    );
+      this.action('Add notes', () => this.showNotes()),
+    ];
+    // Delete lives only on the actions row: opening an editor replaces the
+    // row, so a mid-edit delete is structurally impossible (Back restores it).
+    if (this.onDelete) {
+      const remove = this.action('Delete', () => {
+        void this.deleteCurrent(remove);
+      });
+      remove.classList.add('danger');
+      buttons.push(remove);
+    }
+    mount.replaceChildren(...buttons);
     this.reposition();
+  }
+
+  private async deleteCurrent(button: HTMLButtonElement): Promise<void> {
+    if (this.deleting || !this.onDelete) return;
+    this.deleting = true;
+    button.disabled = true;
+    try {
+      await this.onDelete();
+    } finally {
+      this.deleting = false;
+      if (this.isOpen() && this.current === 'actions') button.disabled = false;
+    }
   }
 
   private showTags(): void {

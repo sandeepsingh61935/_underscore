@@ -3,6 +3,7 @@
 **Date:** 2026-09-22
 **Status:** Ready for review
 **Scope:** Webpage content script. After the normal select-to-highlight save, a compact bar offers Add tags and Add notes.
+**Superseded in part:** a plain click on a highlight now opens the same bar with a third Delete action, and the delete icon was removed. Both the selection bar and the click bar offer Delete.
 
 ## Goal
 
@@ -49,7 +50,7 @@ The reference shape is the ChatGPT selection bar: one compact row, two actions, 
 11. A new selection closes the open bar. If that selection creates a highlight, a new bar opens for the new id.
 12. Deleting that highlight, or undoing its create, closes the bar.
 13. The overlap-split path returns before create, so it does not open a bar.
-14. A plain click on a highlight still toggles the delete icon.
+14. ~~A plain click on a highlight still toggles the delete icon.~~ Superseded: a plain click opens the bar with Add tags, Add notes, Delete; the delete icon was removed.
 
 Enter in the tags field saves. In the note field, Enter inserts a new line, and Ctrl+Enter or Cmd+Enter saves.
 

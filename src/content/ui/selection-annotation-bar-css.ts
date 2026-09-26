@@ -57,6 +57,16 @@ export const SELECTION_ANNOTATION_BAR_CSS = `
 .bar button + button {
   border-left: 1px solid var(--rule-soft);
 }
+.bar button.danger {
+  color: #b3261e;
+}
+:host([data-dark]) .bar button.danger {
+  color: #ff8a7a;
+}
+.bar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .editor {
   display: flex;
   flex-direction: column;
