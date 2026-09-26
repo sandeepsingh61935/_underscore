@@ -76,8 +76,8 @@ describe('WelcomePage', () => {
     expect(document.querySelector('[data-od-id="welcome-get-started"]')).toBeTruthy();
   });
 
-  it('Get started slides gate (no route change, data-gate=open)', async () => {
-    wrap(<WelcomePage />);
+  it('Get started slides gate on desktop Firefox (no route change, data-gate=open)', async () => {
+    wrap(<WelcomePage detectedBrowser="firefox" clientKind="desktop" />);
     const btn = screen.getByRole('button', { name: /Get started/i });
     fireEvent.click(btn);
     const gate = document.querySelector('[data-gate="open"]');
@@ -87,14 +87,34 @@ describe('WelcomePage', () => {
     // focus moves to first store CTA
     await waitFor(() => {
       const firstCta = document.querySelector(
-        '[data-od-id="welcome-gate-store-chrome"], [data-od-id="welcome-gate-store-firefox"]'
+        '[data-od-id="welcome-gate-store-firefox"]'
       ) as HTMLElement;
       expect(document.activeElement).toBe(firstCta);
     });
   });
 
-  it('Esc reverses gate and returns focus to Get started', async () => {
-    wrap(<WelcomePage />);
+  it('Get started navigates directly to /home on desktop Chrome', async () => {
+    wrap(<WelcomePage detectedBrowser="chrome" clientKind="desktop" />);
+    const btn = screen.getByRole('button', { name: /Get started/i });
+    fireEvent.click(btn);
+    expect(document.querySelector('[data-gate="open"]')).toBeNull();
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="home-stub"]')).toBeTruthy();
+    });
+  });
+
+  it('Get started navigates directly to /home on mobile clients', async () => {
+    wrap(<WelcomePage detectedBrowser="firefox" clientKind="phone" />);
+    const btn = screen.getByRole('button', { name: /Get started/i });
+    fireEvent.click(btn);
+    expect(document.querySelector('[data-gate="open"]')).toBeNull();
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="home-stub"]')).toBeTruthy();
+    });
+  });
+
+  it('Esc reverses gate and returns focus to Get started on desktop Firefox', async () => {
+    wrap(<WelcomePage detectedBrowser="firefox" clientKind="desktop" />);
     fireEvent.click(screen.getByRole('button', { name: /Get started/i }));
     expect(document.querySelector('[data-gate="open"]')).toBeTruthy();
     fireEvent.keyDown(window, { key: 'Escape' });
@@ -109,22 +129,16 @@ describe('WelcomePage', () => {
     });
   });
 
-  it('Chrome UA shows only Chrome card', () => {
-    wrap(<WelcomePage detectedBrowser="chrome" initialGateOpen />);
-    expect(
-      document.querySelector('[data-od-id="welcome-gate-browser-chrome"]')
-    ).toBeTruthy();
-    expect(
-      document.querySelector('[data-od-id="welcome-gate-browser-firefox"]')
-    ).toBeNull();
-    expect(document.querySelector('[data-od-id="welcome-gate-callout"]')).toBeNull();
-    expect(
-      document.querySelector('[data-od-id="welcome-gate-store-chrome"]')
-    ).toBeTruthy();
+  it('Chrome UA redirects to /home when initialGateOpen is true', async () => {
+    wrap(<WelcomePage detectedBrowser="chrome" clientKind="desktop" initialGateOpen />);
+    expect(document.querySelector('[data-gate="open"]')).toBeNull();
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="home-stub"]')).toBeTruthy();
+    });
   });
 
-  it('Firefox UA shows only Firefox card', () => {
-    wrap(<WelcomePage detectedBrowser="firefox" initialGateOpen />);
+  it('Firefox UA on desktop shows only Firefox card', () => {
+    wrap(<WelcomePage detectedBrowser="firefox" clientKind="desktop" initialGateOpen />);
     expect(
       document.querySelector('[data-od-id="welcome-gate-browser-firefox"]')
     ).toBeTruthy();
@@ -134,17 +148,12 @@ describe('WelcomePage', () => {
     expect(document.querySelector('[data-od-id="welcome-gate-callout"]')).toBeNull();
   });
 
-  it('unknown shows both cards + callout', () => {
-    wrap(<WelcomePage detectedBrowser="unknown" initialGateOpen />);
-    expect(
-      document.querySelector('[data-od-id="welcome-gate-browser-chrome"]')
-    ).toBeTruthy();
-    expect(
-      document.querySelector('[data-od-id="welcome-gate-browser-firefox"]')
-    ).toBeTruthy();
-    expect(
-      document.querySelector('[data-od-id="welcome-gate-callout"]')?.textContent
-    ).toMatch(/Desktop Chrome or Firefox required/i);
+  it('unknown browser redirects to /home when initialGateOpen is true', async () => {
+    wrap(<WelcomePage detectedBrowser="unknown" clientKind="desktop" initialGateOpen />);
+    expect(document.querySelector('[data-gate="open"]')).toBeNull();
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="home-stub"]')).toBeTruthy();
+    });
   });
 
   it('Already set up navigates to /home without a presence ping', async () => {
@@ -161,7 +170,7 @@ describe('WelcomePage', () => {
   });
 
   it('Continue without installing goes to /home from the gate', async () => {
-    wrap(<WelcomePage detectedBrowser="chrome" initialGateOpen />);
+    wrap(<WelcomePage detectedBrowser="firefox" clientKind="desktop" initialGateOpen />);
     const cont = document.querySelector(
       '[data-od-id="welcome-gate-continue"]'
     ) as HTMLAnchorElement;
@@ -181,7 +190,14 @@ describe('WelcomePage', () => {
         <Routes>
           <Route
             path="/install"
-            element={<WelcomePage initialGateOpen aliasMode />}
+            element={
+              <WelcomePage
+                initialGateOpen
+                aliasMode
+                detectedBrowser="firefox"
+                clientKind="desktop"
+              />
+            }
           />
           <Route path="/library" element={<div data-od-id="lib-stub">Lib</div>} />
           <Route path="/home" element={<div data-od-id="home-stub">Home</div>} />
@@ -197,7 +213,7 @@ describe('WelcomePage', () => {
   });
 
   it('How to set it up collapsed by default and expands', async () => {
-    wrap(<WelcomePage detectedBrowser="chrome" initialGateOpen />);
+    wrap(<WelcomePage detectedBrowser="firefox" clientKind="desktop" initialGateOpen />);
     expect(document.querySelector('[data-od-id="welcome-gate-how-body"]')).toBeNull();
     const toggle = document.querySelector(
       '[data-od-id="welcome-gate-how-toggle"]'
@@ -208,11 +224,11 @@ describe('WelcomePage', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(
       document.querySelector('[data-od-id="welcome-gate-how-body"]')?.textContent
-    ).toMatch(/Pin via puzzle/i);
+    ).toMatch(/temporary add-on|about:debugging/i);
   });
 
   it('I’ve installed it — check shows checking, disables, error alert on missing', async () => {
-    wrap(<WelcomePage detectedBrowser="chrome" initialGateOpen />);
+    wrap(<WelcomePage detectedBrowser="firefox" clientKind="desktop" initialGateOpen />);
     const btn = document.querySelector(
       '[data-od-id="welcome-gate-check"]'
     ) as HTMLButtonElement;
@@ -238,7 +254,7 @@ describe('WelcomePage', () => {
       presence: 'installed',
       version: '1.2.3',
     } as never);
-    wrap(<WelcomePage detectedBrowser="chrome" initialGateOpen />);
+    wrap(<WelcomePage detectedBrowser="firefox" clientKind="desktop" initialGateOpen />);
     fireEvent.click(
       document.querySelector('[data-od-id="welcome-gate-check"]') as HTMLElement
     );
@@ -266,7 +282,7 @@ describe('WelcomePage', () => {
   });
 
   it('has no Back button (removed per design)', async () => {
-    wrap(<WelcomePage detectedBrowser="chrome" initialGateOpen />);
+    wrap(<WelcomePage detectedBrowser="firefox" clientKind="desktop" initialGateOpen />);
     expect(document.querySelector('[data-action="welcome-close-gate"]')).toBeNull();
     expect(document.querySelector('.welcome__gate-back')).toBeNull();
   });

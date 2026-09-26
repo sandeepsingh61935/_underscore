@@ -17,13 +17,17 @@ vi.mock('@/shared/extension/extension-presence', async () => {
   };
 });
 
+import type { InstallPageProps } from './InstallPage';
 import { InstallPage } from './InstallPage';
 
-function renderInstall(initial = '/install') {
+function renderInstall(
+  props: InstallPageProps = { detectedBrowser: 'firefox', clientKind: 'desktop' },
+  initial = '/install'
+) {
   return render(
     <MemoryRouter initialEntries={[initial]}>
       <Routes>
-        <Route path="/install" element={<InstallPage />} />
+        <Route path="/install" element={<InstallPage {...props} />} />
         <Route path="/" element={<div data-od-id="welcome-stub">Welcome</div>} />
         <Route path="/home" element={<div data-od-id="home-stub">Home</div>} />
       </Routes>
@@ -36,8 +40,8 @@ describe('InstallPage alias', () => {
     vi.clearAllMocks();
   });
 
-  it('renders welcome-gate alias (data-od-id=install data-alias=welcome-gate, gate open)', () => {
-    renderInstall();
+  it('renders welcome-gate alias on desktop Firefox (data-od-id=install data-alias=welcome-gate, gate open)', () => {
+    renderInstall({ detectedBrowser: 'firefox', clientKind: 'desktop' });
     const root = document.querySelector('[data-od-id="install"]');
     expect(root).toBeTruthy();
     expect(root?.getAttribute('data-alias')).toBe('welcome-gate');
@@ -46,18 +50,29 @@ describe('InstallPage alias', () => {
     expect(document.querySelector('[data-od-id="welcome-gate-browsers"]')).toBeTruthy();
   });
 
-  it('alias shows browser cards (at least one store CTA) and verify block', () => {
-    renderInstall();
-    const chrome = document.querySelector('[data-od-id="welcome-gate-browser-chrome"]');
+  it('alias shows Firefox browser card and verify block on desktop Firefox', () => {
+    renderInstall({ detectedBrowser: 'firefox', clientKind: 'desktop' });
     const firefox = document.querySelector('[data-od-id="welcome-gate-browser-firefox"]');
-    expect(chrome || firefox).toBeTruthy();
+    expect(firefox).toBeTruthy();
     expect(document.querySelector('[data-od-id="welcome-gate-check"]')).toBeTruthy();
     expect(document.querySelector('[data-od-id="welcome-gate-how"]')).toBeTruthy();
   });
 
   it('alias has no separate install layout', () => {
-    renderInstall();
+    renderInstall({ detectedBrowser: 'firefox', clientKind: 'desktop' });
     expect(document.querySelector('[data-od-id="install-lede"]')).toBeNull();
     expect(document.querySelector('.install__panel')).toBeNull();
+  });
+
+  it('redirects to /home on desktop Chrome', () => {
+    renderInstall({ detectedBrowser: 'chrome', clientKind: 'desktop' });
+    expect(document.querySelector('[data-od-id="install"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="home-stub"]')).toBeTruthy();
+  });
+
+  it('redirects to /home on mobile clients', () => {
+    renderInstall({ detectedBrowser: 'firefox', clientKind: 'phone' });
+    expect(document.querySelector('[data-od-id="install"]')).toBeNull();
+    expect(document.querySelector('[data-od-id="home-stub"]')).toBeTruthy();
   });
 });

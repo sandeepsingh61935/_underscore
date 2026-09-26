@@ -7,6 +7,7 @@ import {
   resolveBrowserAvailability,
   showManualDownload,
   showStoreCta,
+  isExtensionInstallSupported,
 } from './install-distribution';
 
 describe('install-distribution', () => {
@@ -66,5 +67,25 @@ describe('install-distribution', () => {
       'chrome',
     ]);
     expect(orderInstallBrowsers(list, 'unknown').map((b) => b.id)[0]).toBe('chrome');
+  });
+
+  describe('isExtensionInstallSupported', () => {
+    it('returns true ONLY for desktop Firefox', () => {
+      expect(isExtensionInstallSupported('firefox', 'desktop')).toBe(true);
+    });
+
+    it('returns false for desktop Chrome and unknown', () => {
+      expect(isExtensionInstallSupported('chrome', 'desktop')).toBe(false);
+      expect(isExtensionInstallSupported('unknown', 'desktop')).toBe(false);
+    });
+
+    it('returns false for mobile clients regardless of browser', () => {
+      expect(isExtensionInstallSupported('firefox', 'phone')).toBe(false);
+      expect(isExtensionInstallSupported('firefox', 'tablet')).toBe(false);
+      expect(isExtensionInstallSupported('chrome', 'phone')).toBe(false);
+      expect(isExtensionInstallSupported('chrome', 'tablet')).toBe(false);
+      expect(isExtensionInstallSupported('unknown', 'phone')).toBe(false);
+      expect(isExtensionInstallSupported('unknown', 'tablet')).toBe(false);
+    });
   });
 });

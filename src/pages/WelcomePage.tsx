@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { useApp } from '@/core/context/AppProvider';
 import { welcomeContinueWithoutCopy } from '@/shared/copy/product-surface-copy';
@@ -9,7 +9,10 @@ import { Logo } from '@/ui-system/components/primitives/Logo';
 import {
   detectInstallBrowser,
   getInstallDistributionConfig,
+  isExtensionInstallSupported,
 } from '@/web/install/install-distribution';
+import type { WebClientKind } from '@/web/lib/classify-web-client';
+import { useWebClientKind } from '@/web/lib/use-web-client-kind';
 import {
   readInstallContinueFrom,
   resolveInstallContinueTo,
@@ -23,6 +26,8 @@ export interface WelcomePageProps {
   aliasMode?: boolean;
   /** Test seam: override detected browser. */
   detectedBrowser?: 'chrome' | 'firefox' | 'unknown';
+  /** Test seam: override detected client kind. */
+  clientKind?: WebClientKind;
 }
 
 const GATE_TIMEOUT_MS = 2200;
@@ -44,13 +49,19 @@ export function WelcomePage({
   initialGateOpen = false,
   aliasMode = false,
   detectedBrowser,
+  clientKind,
 }: WelcomePageProps = {}): React.ReactElement {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useApp();
   const isWeb = !onStartClick;
 
-  const [welcomeGateOpen, setWelcomeGateOpen] = useState(initialGateOpen);
+  const detectedClientKind = useWebClientKind();
+  const kind = clientKind ?? detectedClientKind;
+  const detected = detectedBrowser ?? detectInstallBrowser();
+  const canInstall = isExtensionInstallSupported(detected, kind);
+
+  const [welcomeGateOpen, setWelcomeGateOpen] = useState(initialGateOpen && canInstall);
   const [welcomeGateHowOpen, setWelcomeGateHowOpen] = useState(false);
   const [checking, setChecking] = useState(false);
   const [checkError, setCheckError] = useState<string | null>(null);
@@ -60,7 +71,6 @@ export function WelcomePage({
   const openLibraryRef = useRef<HTMLAnchorElement>(null);
   const getStartedRef = useRef<HTMLButtonElement>(null);
 
-  const detected = detectedBrowser ?? detectInstallBrowser();
   const browserLabel =
     detected === 'chrome' ? 'Chrome' : detected === 'firefox' ? 'Firefox' : null;
 
@@ -137,9 +147,7 @@ export function WelcomePage({
     }
   }, []);
 
-  const continueTo = resolveInstallContinueTo(
-    readInstallContinueFrom(location.state)
-  );
+  const continueTo = resolveInstallContinueTo(readInstallContinueFrom(location.state));
 
   const handleAlreadySetup = useCallback(
     (e: React.MouseEvent) => {
@@ -156,6 +164,18 @@ export function WelcomePage({
     },
     [continueTo, navigate]
   );
+
+  const handleGetStarted = useCallback(() => {
+    if (canInstall) {
+      openGate();
+    } else {
+      navigate(continueTo);
+    }
+  }, [canInstall, continueTo, navigate, openGate]);
+
+  if (initialGateOpen && !canInstall) {
+    return <Navigate to={continueTo} replace />;
+  }
 
   // Popup mode: keep legacy compact layout, no gate
   if (!isWeb) {
@@ -213,8 +233,8 @@ export function WelcomePage({
             variant="primary"
             className="welcome__cta"
             data-od-id="welcome-get-started"
-            data-action="welcome-open-gate"
-            onClick={openGate}
+            data-action={canInstall ? 'welcome-open-gate' : 'welcome-continue'}
+            onClick={handleGetStarted}
           >
             Get started →
           </Button>

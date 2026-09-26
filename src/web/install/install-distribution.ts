@@ -3,6 +3,8 @@
  * Mode is flipped by ops/env when store listings go live — no runtime AMO/CWS APIs.
  */
 
+import type { WebClientKind } from '@/web/lib/classify-web-client';
+
 export type InstallDistributionMode = 'manual' | 'stores' | 'hybrid';
 
 export type InstallBrowserId = 'chrome' | 'firefox';
@@ -136,6 +138,17 @@ export function showManualDownload(availability: InstallBrowserAvailability): bo
 
 export function showStoreCta(availability: InstallBrowserAvailability): boolean {
   return availability === 'store' || availability === 'both';
+}
+
+/**
+ * Extension install gate is only supported on Desktop Firefox.
+ * Chrome is not yet published on CWS, and extensions are unsupported on mobile.
+ */
+export function isExtensionInstallSupported(
+  browser: InstallBrowserDetect,
+  kind: WebClientKind
+): boolean {
+  return kind === 'desktop' && browser === 'firefox';
 }
 
 const CHROME_STEPS = [
