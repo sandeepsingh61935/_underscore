@@ -36,13 +36,12 @@ describe('V2 SegmentedControl', () => {
     expect(onChange).toHaveBeenCalledWith('C');
   });
 
-  it('uses V2 --paper-2 surface (not MD3 bg-surface-container)', () => {
+  it('uses .seg-control class (--paper-2 surface in CSS)', () => {
     const { container } = render(
       <SegmentedControl options={opts} value="A" onChange={() => {}} />
     );
     const root = container.firstChild as HTMLElement;
-    const style = root.getAttribute('style') ?? '';
-    expect(style).toContain('var(--paper-2)');
+    expect(root.className).toMatch(/\bseg-control\b/);
   });
 
   it('active button uses --ink-2 / --paper for ink contrast (not MD3 text-on-surface-variant)', () => {

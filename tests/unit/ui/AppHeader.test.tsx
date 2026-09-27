@@ -32,11 +32,10 @@ describe('V2 AppHeader', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('uses V2 --paper surface, --rule-soft border, --ink text', () => {
-    const { baseElement } = render(<AppHeader variant="standalone" />);
-    const html = baseElement.innerHTML;
-    expect(html).toContain('var(--paper)');
-    expect(html).toContain('var(--rule-soft)');
+  it('uses .app-header class (--paper surface, --rule-soft border in CSS)', () => {
+    const { container } = render(<AppHeader variant="standalone" />);
+    const header = container.firstElementChild as HTMLElement;
+    expect(header.className).toMatch(/\bapp-header\b/);
   });
 
   it('does not use Style C, MD3, or arbitrary motion utilities', () => {
@@ -58,11 +57,11 @@ describe('V2 AppHeader', () => {
     expect(html).not.toMatch(/rounded-md/);
   });
 
-  it('back button has 44px minimum touch target', () => {
-    const { baseElement } = render(
+  it('back button uses .back-btn (44px target in CSS)', () => {
+    render(
       <AppHeader variant="sub" onBack={vi.fn()} backLabel="Collections" />
     );
-    const html = baseElement.innerHTML;
-    expect(html).toMatch(/min-h-\[44px\]/);
+    const back = screen.getByRole('button', { name: /Go back to Collections/ });
+    expect(back.className).toMatch(/\bback-btn\b/);
   });
 });

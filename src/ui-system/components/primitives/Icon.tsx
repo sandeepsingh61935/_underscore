@@ -1,6 +1,6 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L1052-1066 (V2_Icon)
- * V2 contract:
+ * Design contract: src/ui-system/theme/global.css (Icon)
+ * Design contract:
  *   - SVG with viewBox "0 0 24 24", fill "none", stroke "var(--ink)",
  *     strokeWidth "1.6", strokeLinecap/join "round".
  *   - Size 24 default; sm/md/lg scale variants per impl.
@@ -9,7 +9,7 @@
  * Note: current impl uses lucide-react components (not name-based SVG path
  * lookup). The lucide component already renders with viewBox "0 0 24 24",
  * fill "none", stroke-linecap/join round. We lock the public contract:
- * color routes through V2 tokens, sizes match V2 scale, decorative.
+ * color routes through Editorial tokens, sizes match V2 scale, decorative.
  */
 
 import type { LucideIcon } from 'lucide-react';

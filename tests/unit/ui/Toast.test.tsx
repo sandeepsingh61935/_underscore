@@ -71,7 +71,7 @@ describe('V2 Toast', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Boom');
   });
 
-  it('uses V2 --paper surface and --rule-soft border on the toast card', () => {
+  it('uses .toast-item class (--paper surface, --rule-soft border in CSS)', () => {
     render(
       <ToastProvider>
         <Harness />
@@ -81,8 +81,7 @@ describe('V2 Toast', () => {
       screen.getByText('push success').click();
     });
     const html = screen.getByRole('alert').outerHTML;
-    expect(html).toContain('var(--paper)');
-    expect(html).toContain('var(--rule-soft)');
+    expect(html).toMatch(/\btoast-item\b/);
   });
 
   it('does not use Style C, MD3, Tailwind palette, or shadcn utility classes', () => {

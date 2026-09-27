@@ -1,6 +1,6 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L1131-1141 (V2_Separator)
- * V2 contract: hairline 1px tall (horizontal) or 1px wide (vertical) with
+ * Design contract: src/ui-system/theme/global.css (Separator)
+ * Design contract: hairline 1px tall (horizontal) or 1px wide (vertical) with
  *   var(--rule-soft) background. No inset or label variants in wireframe.
  *   The current impl is a thin Radix wrapper with the same visual contract.
  */

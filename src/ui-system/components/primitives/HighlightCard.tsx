@@ -1,6 +1,6 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx (V2_HighlightCard)
- * V2 contract:
+ * Wireframe: src/ui-system/theme/global.css (HighlightCard)
+ * Design contract:
  *   - Background var(--paper), border-bottom 1px var(--rule-soft).
  *   - Density: compact 10/8 pad; comfortable 12/8 (asymmetric — kill bottom waste).
  *   - Quote: markdown body via HighlightMarkdownBody (serif + mono for code).

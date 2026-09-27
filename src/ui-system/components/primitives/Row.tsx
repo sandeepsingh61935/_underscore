@@ -1,9 +1,11 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L308-331 (Row primitive)
- * V2 contract: <button> with display:grid, columns auto 1fr auto (when left
- *   is present) or 1fr auto (no left). min-height 44px. padding 14px 16px
- *   (default) or 10px 16px (compact). border-bottom 1px var(--rule-soft).
- *   title in --ink / 14px / 500 weight / ellipsis, sub in --ink-3 / 10px mono.
+ * Design contract: src/ui-system/theme/global.css (Row section)
+ * <button> with display:grid, columns auto 1fr auto (when left
+ *   is present) or 1fr auto (no left). min-height var(--control-h).
+ *   padding 14px var(--type-inset-padding) (default) or 10px (compact).
+ *   border-bottom 1px var(--rule-soft).
+ *   title in var(--ink) / var(--type-title-row) / 500 weight / ellipsis,
+ *   sub in var(--ink-3) / var(--type-label) mono.
  */
 import React, { type ButtonHTMLAttributes, type ReactNode } from 'react';
 
@@ -24,10 +26,10 @@ const rowStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '1fr auto',
   alignItems: 'center',
-  gap: 12,
-  padding: '14px 16px',
+  gap: 'var(--type-section-gap)',
+  padding: '14px var(--type-inset-padding)',
   borderBottom: '1px solid var(--rule-soft)',
-  minHeight: 44,
+  minHeight: 'var(--control-h)',
   width: '100%',
   boxSizing: 'border-box',
 };
@@ -44,7 +46,7 @@ function RowContent({
       <div style={{ minWidth: 0, textAlign: 'left' }}>
         <div
           style={{
-            fontSize: 14,
+            fontSize: 'var(--type-title-row)',
             color: 'var(--ink)',
             fontWeight: 500,
             whiteSpace: 'nowrap',
@@ -57,7 +59,11 @@ function RowContent({
         {sub ? (
           <div
             className="u-mono"
-            style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 2 }}
+            style={{
+              fontSize: 'var(--type-label)',
+              color: 'var(--ink-3)',
+              marginTop: 2,
+            }}
           >
             {sub}
           </div>
@@ -96,7 +102,9 @@ export function Row({
           all: 'unset',
           cursor: 'pointer',
           ...rowStyle,
-          padding: compact ? '10px 16px' : '14px 16px',
+          padding: compact
+            ? '10px var(--type-inset-padding)'
+            : '14px var(--type-inset-padding)',
           gridTemplateColumns: left ? 'auto 1fr auto' : '1fr auto',
         }}
       >
@@ -110,7 +118,9 @@ export function Row({
       className="u-sans"
       style={{
         ...rowStyle,
-        padding: compact ? '10px 16px' : '14px 16px',
+        padding: compact
+          ? '10px var(--type-inset-padding)'
+          : '14px var(--type-inset-padding)',
         gridTemplateColumns: left ? 'auto 1fr auto' : '1fr auto',
       }}
     >

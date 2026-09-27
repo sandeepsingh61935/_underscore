@@ -1,6 +1,6 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L444-491
- * V2 contract:
+ * Wireframe: src/ui-system/theme/global.css L444-491
+ * Design contract:
  *   - Stack slides between sibling levels in 220ms with translateX(±30%) + opacity.
  *   - Reduced motion mode swaps levels instantly.
  */

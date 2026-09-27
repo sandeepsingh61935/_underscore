@@ -1,6 +1,6 @@
 /**
- * Wireframe: ui_kits/extension/v2/tokens.css L329-343 (.u-card-row CSS)
- * V2 contract: V2 surface card. background --paper-2, border --rule-soft
+ * Design contract: src/ui-system/theme/global.css (.u-card-row CSS)
+ * Design contract: Editorial surface card. background --paper-2, border --rule-soft
  *   (or --rule when elevated), text --ink. No box-shadows. padding p-4.
  *   interactive -> <button> for click target.
  *
@@ -14,13 +14,12 @@ import { describe, expect, it } from 'vitest';
 
 import { Card, CardTitle, CardDescription, CardFooter } from './Card';
 
-describe('Card (V2 surface)', () => {
-  it('renders a div with --paper-2 background by default', () => {
+describe('Card (Editorial surface)', () => {
+  it('renders a div with .card class (--paper-2 background in CSS)', () => {
     const { container } = render(<Card>body</Card>);
     const el = container.firstElementChild as HTMLElement;
     expect(el.tagName).toBe('DIV');
-    const style = el.getAttribute('style') ?? '';
-    expect(style).toContain('var(--paper-2)');
+    expect(el.className).toMatch(/\bcard\b/);
   });
 
   it('renders --rule-soft border by default and --rule when elevated', () => {
@@ -28,12 +27,12 @@ describe('Card (V2 surface)', () => {
     const el = container.firstElementChild as HTMLElement;
     const style = el.getAttribute('style') ?? '';
     expect(style).toContain('var(--rule-soft)');
-    expect(style).not.toContain('var( --rule )');
+    expect(style).not.toContain('1px solid var(--rule);');
 
     rerender(<Card elevated>x</Card>);
     const elevated = container.firstElementChild as HTMLElement;
     const elevatedStyle = elevated.getAttribute('style') ?? '';
-    expect(elevatedStyle).toContain('var( --rule )');
+    expect(elevatedStyle).toContain('var(--rule)');
   });
 
   it('renders a <button> element when interactive is true', () => {
@@ -46,7 +45,7 @@ describe('Card (V2 surface)', () => {
     const el = screen.getByText('Title');
     const style = el.getAttribute('style') ?? '';
     expect(style).toContain('var(--ink)');
-    expect(el.className).toContain('font-serif');
+    expect(el.className).toContain('u-serif');
   });
 
   it('CardDescription uses --ink-2 for muted body text', () => {
@@ -56,10 +55,9 @@ describe('Card (V2 surface)', () => {
     expect(style).toContain('var(--ink-2)');
   });
 
-  it('CardFooter uses --rule-soft for the top divider border', () => {
+  it('CardFooter uses .card-footer class (--rule-soft divider in CSS)', () => {
     const { container } = render(<CardFooter>footer</CardFooter>);
     const el = container.firstElementChild as HTMLElement;
-    const style = el.getAttribute('style') ?? '';
-    expect(style).toContain('var(--rule-soft)');
+    expect(el.className).toMatch(/\bcard-footer\b/);
   });
 });

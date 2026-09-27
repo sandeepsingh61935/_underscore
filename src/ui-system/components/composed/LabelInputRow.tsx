@@ -1,6 +1,6 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx (MarginaliaStrip section)
- * V2 contract: single flex-wrap row (NOT the old Chip's stacked layout) —
+ * Wireframe: src/ui-system/theme/global.css (MarginaliaStrip section)
+ * Design contract: single flex-wrap row (NOT the old Chip's stacked layout) —
  * committed tag pills, a bare native input for the draft, then dashed
  * ghost pills for matching suggestions, all in one line that wraps.
  *

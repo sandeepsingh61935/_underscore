@@ -24,18 +24,10 @@ describe('V2 Spinner', () => {
   });
 
   describe('V2 token usage', () => {
-    it('uses --rule-soft for the static ring border', () => {
+    it('uses .spinner class (--rule-soft ring, --accent top edge in CSS)', () => {
       const { container } = render(<Spinner />);
       const el = container.firstChild as HTMLElement;
-      const style = el.getAttribute('style') ?? '';
-      expect(style).toContain('var(--rule-soft)');
-    });
-
-    it('uses --accent for the rotating top edge', () => {
-      const { container } = render(<Spinner />);
-      const el = container.firstChild as HTMLElement;
-      const style = el.getAttribute('style') ?? '';
-      expect(style).toContain('var(--accent)');
+      expect(el.className).toMatch(/\bspinner\b/);
     });
   });
 

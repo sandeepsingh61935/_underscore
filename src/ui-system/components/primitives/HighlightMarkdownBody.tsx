@@ -1,5 +1,5 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx (HighlightCard markdown body)
+ * Wireframe: src/ui-system/theme/global.css (HighlightCard markdown body)
  * Renders highlight `text` as a restricted CommonMark-ish subset.
  * Code fences: mono panel + lang label + Copy (inner only).
  * @see docs/superpowers/specs/2026-07-14-highlight-markdown-body-design.md

@@ -21,9 +21,10 @@ export interface SegmentedControlProps {
 }
 
 /**
- * V2 Segmented control with animated sliding indicator.
+ * Editorial segmented control with animated sliding indicator.
  * Surface: --paper-2; active pill: --accent; idle text: --ink-2; active text: --paper.
- * Geometry: V2 --radius (2px). No box-shadow (V2 uses borders).
+ * Geometry: --radius. No box-shadow (Editorial uses borders).
+ * Styles: `.seg-control` / `.seg-option` in src/ui-system/theme/global.css.
  *
  * Usage:
  *   <SegmentedControl options={THEME_OPTIONS} value={theme} onChange={setTheme} layoutId="theme" />
@@ -37,10 +38,7 @@ export function SegmentedControl({
   className,
 }: SegmentedControlProps): React.JSX.Element {
   return (
-    <div
-      className={cn('relative flex p-[3px] gap-[2px] rounded', className)}
-      style={{ backgroundColor: 'var(--paper-2)' }}
-    >
+    <div className={cn('seg-control', className)}>
       {options.map((opt) => {
         const isActive = value === opt;
         return (
@@ -49,25 +47,16 @@ export function SegmentedControl({
             type="button"
             onClick={() => onChange(opt)}
             aria-pressed={isActive}
-            className={cn(
-              'relative flex-1 py-[6px] px-2 rounded border-0 cursor-pointer',
-              'transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-1'
-            )}
-            style={{
-              color: isActive ? 'var(--paper)' : 'var(--ink-2)',
-              fontSize: 'var(--step--1)',
-            }}
+            className={cn('seg-option', isActive && 'is-active')}
           >
             {isActive && (
               <motion.div
                 layoutId={`seg-indicator-${layoutId}`}
-                className="absolute inset-0 rounded"
-                style={{ backgroundColor: 'var( --accent )' }}
+                className="seg-option-indicator"
                 transition={{ type: 'tween', duration: 0.18, ease: 'easeOut' }}
               />
             )}
-            <span className="relative z-10">{opt}</span>
+            <span className="seg-option-label">{opt}</span>
           </button>
         );
       })}

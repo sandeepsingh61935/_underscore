@@ -53,26 +53,14 @@ export function ProviderButton({
     <button
       type="button"
       disabled={disabled || isLoading}
-      className={cn(
-        'relative flex min-h-[44px] w-full items-center justify-center gap-3 px-4 py-3',
-        'border rounded duration-step-0 ease-standard',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
-        className
-      )}
-      style={{
-        backgroundColor: 'var(--paper)',
-        color: 'var(--ink)',
-        borderColor: 'var(--rule)',
-        fontSize: 'var(--step-0)',
-      }}
+      className={cn('provider-btn', className)}
       {...props}
     >
       {isLoading ? (
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--ink-3)' }} />
+        <Loader2 className="anim-spin" aria-hidden="true" />
       ) : (
         <>
-          <Icon className="w-5 h-5 shrink-0" />
+          <Icon aria-hidden="true" />
           <span>{children || config.label}</span>
         </>
       )}

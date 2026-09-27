@@ -1,10 +1,9 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L627-677 (V2_Chip)
- * V2 contract:
- *   - filter variant: 44px tall, 2px radius, --paper-2 surface,
+ * Design contract: src/ui-system/theme/global.css (Chip section)
+ *   - filter variant: 44px tall, --radius, --paper-2 surface,
  *     --rule-soft border default, --accent border+text when selected.
- *   - input variant: pill (borderRadius: 999), --paper-2 surface,
- *     --rule-soft border, 32px height, trailing × button when onRemove set.
+ *   - input variant: pill, --paper-2 surface, --rule-soft border,
+ *     trailing × button when onRemove set.
  */
 
 import { X } from 'lucide-react';
@@ -12,12 +11,6 @@ import React, { forwardRef } from 'react';
 import type { ButtonHTMLAttributes } from 'react';
 
 import { cn } from '../../utils/cn';
-import {
-  tonalPillActiveClass,
-  tonalPillBaseClass,
-  tonalPillInactiveClass,
-  tonalPillStandaloneClass,
-} from '../../utils/tonalPill';
 
 export interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'filter' | 'input';
@@ -43,44 +36,16 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
     },
     ref
   ) => {
-    const sharedChipClasses = cn(
-      'inline-flex min-h-[44px] items-center justify-center gap-2',
-      'transition-colors',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
-      'disabled:opacity-50 disabled:pointer-events-none'
-    );
-
-    const variantClasses = cn(
-      variant === 'filter' && [
-        tonalPillBaseClass,
-        tonalPillStandaloneClass,
-        !selected && [tonalPillInactiveClass, 'hover:border-[var( --rule )]'],
-        selected && [tonalPillActiveClass],
-      ],
-
-      variant === 'input' && [
-        'rounded-full border border-[var(--rule-soft)] bg-[var(--paper-2)] text-[var(--ink)]',
-        'hover:bg-[color-mix(in_oklch,var(--ink)_4%,var(--paper-2))]',
-      ]
-    );
-
     if (variant === 'input' && onRemove) {
       return (
-        <div
-          className={cn(sharedChipClasses, variantClasses, 'w-fit pl-4 pr-1', className)}
-          style={style}
-        >
-          {icon && (
-            <span className="flex h-[18px] w-[18px] items-center justify-center">
-              {icon}
-            </span>
-          )}
+        <div className={cn('chip-input-wrap', className)} style={style}>
+          {icon && <span className="chip-icon">{icon}</span>}
           <button
             ref={ref}
             type={type ?? 'button'}
             onClick={onClick}
             disabled={disabled}
-            className="min-h-[44px] min-w-0 flex-1 rounded-full bg-transparent text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2"
+            className="chip-input-main"
             {...props}
           >
             {children}
@@ -92,16 +57,10 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
               onRemove();
             }}
             disabled={disabled}
-            className={cn(
-              'inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full',
-              'text-[var(--ink-2)] transition-colors',
-              'hover:bg-[color-mix(in_oklch,var(--ink)_8%,transparent)]',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var( --accent )] focus-visible:ring-offset-2',
-              'disabled:opacity-50 disabled:pointer-events-none'
-            )}
+            className="chip-remove"
             aria-label="Remove"
           >
-            <X className="h-[16px] w-[16px]" />
+            <X aria-hidden="true" />
           </button>
         </div>
       );
@@ -113,15 +72,18 @@ const Chip = forwardRef<HTMLButtonElement, ChipProps>(
         type={type ?? 'button'}
         onClick={onClick}
         disabled={disabled}
-        className={cn(sharedChipClasses, variantClasses, 'px-4', className)}
-        style={{ fontSize: 'var(--step-0)', ...style }}
+        className={cn(
+          'chip',
+          variant === 'filter' && 'chip-filter',
+          variant === 'input' && 'chip-input',
+          selected && 'is-selected',
+          className
+        )}
+        style={style}
+        aria-pressed={selected}
         {...props}
       >
-        {icon && (
-          <span className="flex h-[18px] w-[18px] items-center justify-center">
-            {icon}
-          </span>
-        )}
+        {icon && <span className="chip-icon">{icon}</span>}
         {children}
       </button>
     );

@@ -1,6 +1,6 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx (MarginaliaStrip section, TagPill)
- * V2 contract:
+ * Wireframe: src/ui-system/theme/global.css (MarginaliaStrip section, TagPill)
+ * Design contract:
  *   - 20px tall, var(--radius) corners (NOT round), var(--rule-soft) border
  *     (dashed when `ghost`), mono var(--step--2) label.
  *   - Distinct from the 44px `Chip` primitive — this is a small inline label

@@ -33,9 +33,9 @@ src/ui-system/
 │   └── global.css         # Global styles and design tokens
 
 └── utils/
-    ├── animations.ts      # Animation utilities
+    # (animations.ts removed — keyframes live in global.css as .anim-*)
     ├── cn.ts              # Class name utility
-    └── tonalPill.ts       # Shared tonal pill / segmented control classes
+    └── tonalPill.ts       # Pill class names (plain CSS in global.css)
 ```
 
 ## Component Reference
@@ -75,10 +75,10 @@ src/ui-system/
 
 ## Design Tokens
 
-Design tokens are defined in `src/ui-system/theme/global.css` and
-`ui_kits/extension/v2/tokens.css`.
+Design tokens are defined in `src/ui-system/theme/global.css`
+(production source of truth).
 
-See `.agent/workflows/v2-tokens-reference.md` for the complete V2 token lookup
+See `.agent/workflows/v2-tokens-reference.md` for the complete Editorial token lookup
 table.
 
 ### V2 Color System
@@ -115,11 +115,11 @@ table.
 ### Animation Classes
 
 ```css
-.animate-fadeIn       /* Fade in */
-.animate-fadeSlideIn  /* Fade + slide up */
-.animate-scaleIn      /* Scale + fade in */
-.animate-slideInUp    /* Slide up */
-.animate-shimmer      /* Shimmer effect (skeletons) */
+.anim-spin           /* Spinner rotation */
+.anim-pulse          /* Skeleton pulse */
+.anim-shimmer        /* Skeleton shimmer */
+.anim-slide-up       /* Toast entrance */
+@keyframes ue-*       /* spin/pulse/shimmer/slide-up */
 ```
 
 ## Verification

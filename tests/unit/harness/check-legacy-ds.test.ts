@@ -122,6 +122,37 @@ describe('check-legacy-ds.sh — 11 categories', () => {
     expect(result.stdout).toMatch(/border-outline-variant/);
     expect(result.stdout).toMatch(/shadow-elevation-2/);
   });
+
+  it('12. v2 kit refs: detects ui_kits/extension/v2 and V2 contract', async () => {
+    const result = await runHarness({ fixture: 'cat-12-v2refs' });
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toMatch(/cat-12|v2refs/i);
+    expect(result.stdout).toMatch(/ui_kits\/extension\/v2/);
+  });
+
+  it('13. Tailwind arbitrary: detects min-h-[44px], rounded-full, in_oklch', async () => {
+    const result = await runHarness({ fixture: 'cat-13-tw-arbitrary' });
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toMatch(/cat-13|arbitrary/i);
+    expect(result.stdout).toMatch(/min-h-\[44px\]/);
+    expect(result.stdout).toMatch(/in_oklch/);
+  });
+
+  it('14. MD3 deps: detects material-color-utilities, MD3Color, DynamicColorService', async () => {
+    const result = await runHarness({ fixture: 'cat-14-md3-deps' });
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toMatch(/cat-14|md3-deps/i);
+    expect(result.stdout).toMatch(/material-color-utilities/);
+    expect(result.stdout).toMatch(/DynamicColorService/);
+  });
+
+  it('15. Tailwind runtime: detects tailwind-merge and font-serif', async () => {
+    const result = await runHarness({ fixture: 'cat-15-tw-runtime' });
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toMatch(/cat-15|tw-runtime/i);
+    expect(result.stdout).toMatch(/tailwind-merge/);
+    expect(result.stdout).toMatch(/font-serif/);
+  });
 });
 
 describe('check-legacy-ds.sh — clean state', () => {

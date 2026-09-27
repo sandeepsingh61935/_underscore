@@ -46,11 +46,10 @@ describe('V2 ProviderButton', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it('uses V2 --paper surface and --rule border (not Style C bg-surface/border-outline)', () => {
-    const { baseElement } = render(<ProviderButton provider="google" />);
-    const html = baseElement.innerHTML;
-    expect(html).toContain('var(--paper)');
-    expect(html).toContain('var(--rule)');
+  it('uses .provider-btn class (--paper surface, --rule border in CSS)', () => {
+    const { container } = render(<ProviderButton provider="google" />);
+    const btn = container.querySelector('button') as HTMLElement;
+    expect(btn.className).toMatch(/\bprovider-btn\b/);
   });
 
   it('does not use Style C, MD3, or shadcn utility classes', () => {
@@ -82,9 +81,9 @@ describe('V2 ProviderButton', () => {
     expect(html).not.toMatch(/zinc-50|锌/);
   });
 
-  it('has 44px minimum touch target', () => {
-    const { baseElement } = render(<ProviderButton provider="google" />);
-    const html = baseElement.innerHTML;
-    expect(html).toMatch(/min-h-\[44px\]/);
+  it('has 44px minimum touch target (.provider-btn in CSS)', () => {
+    const { container } = render(<ProviderButton provider="google" />);
+    const btn = container.querySelector('button') as HTMLElement;
+    expect(btn.className).toMatch(/\bprovider-btn\b/);
   });
 });

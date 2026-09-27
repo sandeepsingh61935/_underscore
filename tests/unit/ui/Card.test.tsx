@@ -26,18 +26,10 @@ describe('V2 Card', () => {
       expect(el).toBeInTheDocument();
     });
 
-    it('uses V2 --paper-2 surface (not MD3 bg-surface-container)', () => {
+    it('uses .card class (--paper-2 surface, --ink text in CSS)', () => {
       const { container } = render(<Card>x</Card>);
       const el = container.firstChild as HTMLElement;
-      const style = el.getAttribute('style') ?? '';
-      expect(style).toContain('var(--paper-2)');
-    });
-
-    it('uses V2 --ink for text color (not MD3 text-on-surface)', () => {
-      const { container } = render(<Card>x</Card>);
-      const el = container.firstChild as HTMLElement;
-      const style = el.getAttribute('style') ?? '';
-      expect(style).toContain('var(--ink)');
+      expect(el.className).toMatch(/\bcard\b/);
     });
 
     it('uses V2 --rule-soft for border (not box-shadow — V2 uses borders)', () => {
@@ -97,11 +89,10 @@ describe('V2 Card', () => {
       expect(style).toContain('var(--ink-2)');
     });
 
-    it('CardFooter uses --rule-soft for the top border', () => {
+    it('CardFooter uses .card-footer class (--rule-soft divider in CSS)', () => {
       const { container } = render(<CardFooter>footer</CardFooter>);
       const el = container.firstChild as HTMLElement;
-      const style = el.getAttribute('style') ?? '';
-      expect(style).toContain('var(--rule-soft)');
+      expect(el.className).toMatch(/\bcard-footer\b/);
     });
   });
 });

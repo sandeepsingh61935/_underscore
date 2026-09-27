@@ -33,65 +33,49 @@ export function DomainDetailsView({
   className,
 }: DomainDetailsViewProps): React.JSX.Element {
   return (
-    <div className={cn('flex flex-col h-full', className)}>
+    <div className={cn('domain-view', className)}>
       {/* Header with Breadcrumb */}
-      <div className="flex items-center gap-3 pb-4 border-b border-border mb-4">
-        <button
-          onClick={onBack}
-          className="p-1.5 -ml-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-          title="Back to collections"
-        >
-          <ChevronLeft className="w-5 h-5" />
+      <div className="domain-head">
+        <button onClick={onBack} className="icon-btn" title="Back to collections">
+          <ChevronLeft aria-hidden="true" />
         </button>
 
         {/* Domain Info */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="shrink-0 w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center overflow-hidden border border-border/50">
+        <div className="domain-id">
+          <div className="domain-fav">
             {favicon ? (
-              <img
-                src={favicon}
-                alt={`${domain} favicon`}
-                className="w-5 h-5 object-contain"
-              />
+              <img src={favicon} alt={`${domain} favicon`} />
             ) : (
-              <Globe className="w-4 h-4 text-muted-foreground" />
+              <Globe aria-hidden="true" />
             )}
           </div>
-          <div className="min-w-0">
-            <h1 className="text-title-medium text-foreground truncate">{domain}</h1>
-            <p className="text-label-small text-muted-foreground">
+          <div className="domain-titles">
+            <h1 className="domain-title">{domain}</h1>
+            <p className="domain-count">
               {highlights.length} {highlights.length === 1 ? 'highlight' : 'highlights'}
             </p>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1">
+        <div className="domain-actions">
           {onVisitDomain && (
             <button
               onClick={onVisitDomain}
-              className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+              className="icon-btn"
               title="Visit website"
             >
-              <ExternalLink className="w-4 h-4" />
+              <ExternalLink aria-hidden="true" />
             </button>
           )}
           {onExportAll && highlights.length > 0 && (
-            <button
-              onClick={onExportAll}
-              className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-              title="Export all"
-            >
-              <Download className="w-4 h-4" />
+            <button onClick={onExportAll} className="icon-btn" title="Export all">
+              <Download aria-hidden="true" />
             </button>
           )}
           {onClearAll && highlights.length > 0 && (
-            <button
-              onClick={onClearAll}
-              className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-              title="Clear all"
-            >
-              <Trash2 className="w-4 h-4" />
+            <button onClick={onClearAll} className="icon-btn" title="Clear all">
+              <Trash2 aria-hidden="true" />
             </button>
           )}
         </div>
@@ -99,7 +83,7 @@ export function DomainDetailsView({
 
       {/* Highlights List */}
       {highlights.length > 0 ? (
-        <div className="flex-1 overflow-y-auto scrollbar-hide flex flex-col gap-3">
+        <div className="scroll-list">
           {highlights.map((highlight) => (
             <HighlightCard
               key={highlight.id}
@@ -111,12 +95,12 @@ export function DomainDetailsView({
           ))}
         </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-          <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-            <Globe className="w-8 h-8 text-muted-foreground" />
+        <div className="empty-state">
+          <div className="empty-icon">
+            <Globe aria-hidden="true" />
           </div>
-          <h3 className="text-title-medium text-foreground mb-1">No highlights yet</h3>
-          <p className="text-body-small text-muted-foreground max-w-xs">
+          <h3 className="empty-title">No highlights yet</h3>
+          <p className="empty-desc">
             Visit {domain} and start highlighting content to save it here.
           </p>
         </div>

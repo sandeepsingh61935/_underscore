@@ -13,20 +13,16 @@ describe('V2 Input', () => {
     expect(screen.getByPlaceholderText('Email')).toBeInTheDocument();
   });
 
-  it('uses --rule-soft border and paper fill (not MD3 border-outline)', () => {
+  it('uses .input class (--rule-soft border, paper fill, --radius in CSS)', () => {
     render(<Input placeholder="Email" />);
     const input = screen.getByPlaceholderText('Email');
-    const style = input.getAttribute('style') ?? '';
-    expect(style).toContain('var(--rule-soft)');
-    expect(style).toContain('var(--paper)');
-    expect(style).toContain('var(--radius)');
+    expect(input.className).toMatch(/\binput\b/);
   });
 
-  it('uses --ink for text color (not MD3 text-on-surface)', () => {
+  it('uses .input class (--ink text, --step-0 size in CSS)', () => {
     render(<Input placeholder="Email" />);
     const input = screen.getByPlaceholderText('Email');
-    const style = input.getAttribute('style') ?? '';
-    expect(style).toContain('var(--ink)');
+    expect(input.className).toMatch(/\binput\b/);
   });
 
   it('uses --ink-3 for placeholder color (not MD3 text-on-surface-variant)', () => {
@@ -37,20 +33,17 @@ describe('V2 Input', () => {
     expect(input.className).not.toMatch(/placeholder:text-on-surface-variant/);
   });
 
-  it('uses --step-0 for font size (not MD3 text-body-large)', () => {
+  it('does not use MD3 text-body-large utility', () => {
     render(<Input placeholder="Email" />);
     const input = screen.getByPlaceholderText('Email');
-    const style = input.getAttribute('style') ?? '';
-    expect(style).toContain('var(--step-0)');
+    expect(input.className).toMatch(/\binput\b/);
     expect(input.className).not.toMatch(/text-body-large/);
   });
 
-  it('uses --accent for focus border (not MD3 focus:border-primary)', () => {
-    render(<Input placeholder="Email" />);
+  it('marks error state with .is-error (--accent border in CSS)', () => {
+    render(<Input placeholder="Email" error />);
     const input = screen.getByPlaceholderText('Email');
-    // Focus state lives in className (Tailwind focus: variant), style.
-    const allAttrs = (input.getAttribute('style') ?? '') + ' ' + input.className;
-    expect(allAttrs).toMatch(/var\(--accent\)/);
+    expect(input.className).toMatch(/\bis-error\b/);
   });
 
   it('applies error state with --accent border (V2 single-accent error)', () => {

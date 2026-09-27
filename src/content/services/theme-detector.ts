@@ -1,4 +1,21 @@
-import { argbFromHex } from '@material/material-color-utilities';
+/**
+ * Local hex-to-ARGB converter.
+ * Returns a 32-bit ARGB int with full opacity (alpha 0xFF).
+ */
+/** Accepts #RGB or #RRGGBB; invalid input yields opaque black. */
+function argbFromHex(hex: string): number {
+  const clean = hex.replace('#', '');
+  const rgb = parseInt(
+    clean.length === 3
+      ? clean
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : clean,
+    16
+  );
+  return (((0xff << 24) | rgb) >>> 0);
+}
 
 /**
  * Interface for Theme Detection

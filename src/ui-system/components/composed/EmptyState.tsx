@@ -118,7 +118,7 @@ export function EmptyState({
     <div
       role="status"
       aria-live="polite"
-      className={cn('flex flex-col items-center justify-center text-center', className)}
+      className={cn('empty-box', className)}
       style={{ ...styles.container, gap: '8px' }}
     >
       <h3
@@ -137,7 +137,7 @@ export function EmptyState({
 
       {description && (
         <p
-          className="max-w-[32ch]"
+          className="empty-desc-narrow"
           style={{
             color: 'var(--ink-3)',
             ...styles.description,
@@ -151,10 +151,7 @@ export function EmptyState({
       )}
 
       {(action || secondaryAction) && (
-        <div
-          className="flex flex-wrap items-center justify-center gap-2"
-          style={{ marginTop: '14px' }}
-        >
+        <div className="empty-actions">
           {action && (
             <button type="button" onClick={action.onClick} className="btn primary sm">
               {action.label}

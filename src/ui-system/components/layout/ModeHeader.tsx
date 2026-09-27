@@ -14,6 +14,7 @@ export interface ModeHeaderProps {
 /**
  * Back-only chrome row for nested popup views.
  * Returns null when there is no onBack (root tabs must not waste header space).
+ * Styles: `.mode-header` / `.mode-header-back` in src/ui-system/theme/global.css.
  */
 export function ModeHeader({
   backLabel,
@@ -24,32 +25,11 @@ export function ModeHeader({
   }
 
   return (
-    <div
-      style={{
-        padding: '10px 16px',
-        borderBottom: '1px solid var(--rule)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        background: 'var(--paper)',
-        minHeight: 44,
-      }}
-    >
+    <div className="mode-header">
       <button
         type="button"
         onClick={onBack}
-        className="u-mono"
-        style={{
-          all: 'unset',
-          cursor: 'pointer',
-          fontSize: 'var(--step--2)',
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase',
-          color: 'var(--ink-3)',
-          minHeight: 24,
-          display: 'flex',
-          alignItems: 'center',
-        }}
+        className="mode-header-back"
       >
         ← {backLabel || 'Back'}
       </button>

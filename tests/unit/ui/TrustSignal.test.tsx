@@ -17,7 +17,7 @@ describe('V2 TrustSignal', () => {
     const { container } = render(<TrustSignal />);
     const el = container.querySelector('span.u-sans') as HTMLElement;
     const style = el.getAttribute('style') ?? '';
-    expect(style).toContain('var( --ink-3 )');
+    expect(style).toContain('var(--ink-3)');
     expect(style).not.toMatch(/--text-/);
     expect(style).not.toMatch(/--outline\b/);
   });
@@ -26,7 +26,7 @@ describe('V2 TrustSignal', () => {
     const { container } = render(<TrustSignal />);
     const el = container.querySelector('span.u-sans') as HTMLElement;
     const style = el.getAttribute('style') ?? '';
-    expect(style).toContain('11');
+    expect(style).toContain('var(--step--1)');
     expect(el.className).not.toMatch(/text-body-small/);
   });
 

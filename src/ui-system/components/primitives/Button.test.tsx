@@ -1,6 +1,6 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L233-262 (.btn CSS in tokens.css)
- * V2 contract: 4 variants (default/primary/accent/ghost), 2 sizes (md/sm),
+ * Design contract: src/ui-system/theme/global.css (.btn CSS in global.css)
+ * Design contract: 4 variants (default/primary/accent/ghost), 2 sizes (md/sm),
  * 44px touch target on md, transparent loading state.
  */
 import React from 'react';

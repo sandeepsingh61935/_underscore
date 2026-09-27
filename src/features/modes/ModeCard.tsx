@@ -22,7 +22,7 @@ const MODE_ICONS: Record<ModeType, React.ReactNode> = {
 
 /**
  * Mode selection card — V2 Editorial reskin.
- * Uses V2 tokens only; no MD3, no Ink & Glass, no arbitrary utilities.
+ * Uses Editorial tokens only; no legacy vars, no arbitrary utilities.
  */
 
 export function ModeCard({

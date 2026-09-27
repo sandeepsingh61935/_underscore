@@ -1,6 +1,6 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L496-508
- * V2 contract:
+ * Wireframe: src/ui-system/theme/global.css L496-508
+ * Design contract:
  *   - Fade-out + lift (opacity: 0, translateY(4px)) when open is false.
  *   - Skips transition when prefers-reduced-motion is on.
  */

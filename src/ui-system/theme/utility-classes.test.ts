@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const globalCss = readFileSync(resolve(__dirname, './global.css'), 'utf-8');
 
 /**
- * Wireframe contract: ui_kits/extension/v2/tokens.css
+ * Wireframe contract: src/ui-system/theme/global.css
  * - .u-sans: font-family: var(--sans)
  * - .qmark: font-family: var(--serif); font-style: italic; font-weight: 400;
  *          color: var(--accent); opacity: 0.6

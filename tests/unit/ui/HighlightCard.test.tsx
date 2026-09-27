@@ -49,12 +49,11 @@ describe('V2 HighlightCard', () => {
     expect(onDelete).toHaveBeenCalledWith('h1');
   });
 
-  it('uses V2 --paper surface, --rule-soft border, --ink text', () => {
-    const { baseElement } = render(<HighlightCard highlight={baseHighlight} />);
-    const html = baseElement.innerHTML;
-    expect(html).toContain('var(--paper)');
-    expect(html).toContain('var(--rule-soft)');
-    expect(html).toContain('var(--ink)');
+  it('uses .hl-card class (--paper surface, --rule-soft border, --ink text in CSS)', () => {
+    const { container } = render(<HighlightCard highlight={baseHighlight} />);
+    const html = container.innerHTML;
+    expect(html).toMatch(/\bhl-card\b/);
+    expect(html).toMatch(/\bhl-text\b/);
   });
 
   it('does not use Style C, MD3, or shadcn utility classes', () => {
@@ -85,6 +84,6 @@ describe('V2 HighlightCard', () => {
       <HighlightCard highlight={baseHighlight} onCopy={vi.fn()} onDelete={vi.fn()} />
     );
     const html = baseElement.innerHTML;
-    expect(html).toMatch(/min-h-\[44px\]/);
+    expect(html).toMatch(/\bicon-btn\b/);
   });
 });

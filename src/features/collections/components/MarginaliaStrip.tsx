@@ -1,5 +1,5 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx (MarginaliaStrip section)
+ * Wireframe: src/ui-system/theme/global.css (MarginaliaStrip section)
  * Spec: docs/superpowers/specs/2026-07-14-marginalia-inline-notes-tags-design.md
  * Tile density: docs/superpowers/specs/2026-07-14-highlight-tile-editor-density-prd.md
  *

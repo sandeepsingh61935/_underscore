@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 
+/** Join class names (no Tailwind merging: conflicting classes resolve by CSS cascade order). */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return clsx(...inputs);
 }

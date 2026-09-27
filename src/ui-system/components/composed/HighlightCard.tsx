@@ -10,7 +10,7 @@ export interface Highlight {
   urlPath?: string;
   /** Timestamp when captured */
   createdAt: Date | string;
-  /** Optional accent color (V2 single-accent mode means "with" or "without") */
+  /** Optional accent color ("with" or "without") */
   colorRole?: 'accent' | 'none';
 }
 
@@ -70,25 +70,10 @@ export function HighlightCard({
       : { borderLeft: '4px solid var(--rule-soft)' };
 
   return (
-    <div
-      className={cn('group relative p-4 border rounded min-h-[44px]', className)}
-      style={{
-        backgroundColor: 'var(--paper)',
-        borderColor: 'var(--rule-soft)',
-        ...leftBorderStyle,
-      }}
-    >
-      <p
-        className="leading-relaxed line-clamp-3 pr-8"
-        style={{ fontSize: 'var(--step-0)', color: 'var(--ink)' }}
-      >
-        "{highlight.text}"
-      </p>
+    <div className={cn('hl-card', className)} style={leftBorderStyle}>
+      <p className="hl-text">"{highlight.text}"</p>
 
-      <div
-        className="flex items-center gap-2 mt-3"
-        style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}
-      >
+      <div className="hl-meta">
         <span>{formatDate(highlight.createdAt)}</span>
         {highlight.urlPath && (
           <>
@@ -96,8 +81,7 @@ export function HighlightCard({
             <button
               type="button"
               onClick={() => onNavigate?.(highlight.urlPath!)}
-              className="inline-flex min-h-[44px] max-w-[200px] items-center px-2 -mx-2 text-left truncate transition-colors duration-step-0 ease-standard hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
-              style={{ color: 'inherit' }}
+              className="hl-link"
             >
               {highlight.urlPath}
             </button>
@@ -105,19 +89,15 @@ export function HighlightCard({
         )}
       </div>
 
-      <div
-        className="absolute top-3 right-3 flex items-center gap-1 transition-opacity duration-step-0 ease-standard"
-        aria-hidden={false}
-      >
+      <div className="hl-actions">
         {highlight.urlPath && onNavigate && (
           <button
             type="button"
             onClick={() => onNavigate(highlight.urlPath!)}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded transition-colors duration-step-0 ease-standard hover:bg-[color:var(--paper-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
-            style={{ color: 'var(--ink-3)' }}
+            className="icon-btn"
             aria-label="Open source page"
           >
-            <ExternalLink className="w-4 h-4" aria-hidden="true" />
+            <ExternalLink aria-hidden="true" />
           </button>
         )}
 
@@ -125,14 +105,13 @@ export function HighlightCard({
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded transition-colors duration-step-0 ease-standard hover:bg-[color:var(--paper-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
-            style={{ color: copied ? 'var(--accent)' : 'var(--ink-3)' }}
+            className={cn('icon-btn', copied && 'is-active')}
             aria-label={copied ? 'Copied to clipboard' : 'Copy highlight text'}
           >
             {copied ? (
-              <Check className="w-4 h-4" aria-hidden="true" />
+              <Check aria-hidden="true" />
             ) : (
-              <Copy className="w-4 h-4" aria-hidden="true" />
+              <Copy aria-hidden="true" />
             )}
           </button>
         )}
@@ -141,11 +120,10 @@ export function HighlightCard({
           <button
             type="button"
             onClick={handleDelete}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded transition-colors duration-step-0 ease-standard hover:bg-[color:var(--paper-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
-            style={{ color: 'var(--ink-3)' }}
+            className="icon-btn"
             aria-label="Delete highlight"
           >
-            <Trash2 className="w-4 h-4" aria-hidden="true" />
+            <Trash2 aria-hidden="true" />
           </button>
         )}
       </div>

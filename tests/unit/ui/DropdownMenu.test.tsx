@@ -34,7 +34,7 @@ describe('V2 DropdownMenu', () => {
     );
     // Radix portals to document.body
     const html = baseElement.innerHTML;
-    expect(html).toMatch(/var\(--ink/);
+    expect(html).toMatch(/\bmenu-item\b/);
   });
 
   it('does not use Style C bg-popover / text-popover-foreground utilities', () => {
@@ -73,7 +73,7 @@ describe('V2 DropdownMenu', () => {
       </DropdownMenu>
     );
     const html = baseElement.innerHTML;
-    expect(html).toContain('var(--rule-soft)');
+    expect(html).toMatch(/\bmenu-separator\b/);
   });
 
   it('content uses V2 --paper surface (V2 uses --paper for elevated surfaces)', () => {
@@ -86,6 +86,6 @@ describe('V2 DropdownMenu', () => {
       </DropdownMenu>
     );
     const html = baseElement.innerHTML;
-    expect(html).toContain('var(--paper)');
+    expect(html).toMatch(/\bmenu-content\b/);
   });
 });

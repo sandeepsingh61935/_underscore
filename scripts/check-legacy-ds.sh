@@ -2,7 +2,7 @@
 # check-legacy-ds.sh
 #
 # Detects legacy design-system references in source trees.
-# Categories are defined in the CATEGORIES array below; adding a 12th is one line.
+# Categories are defined in the CATEGORIES array below; adding a 16th is one line.
 #
 # Exit codes:
 #   0 — no violations
@@ -60,6 +60,10 @@ CATEGORIES=(
   "cat-10-mode-names|*.ts*|\\b(walk|sprint|vault|neural)\\b"
   "cat-10-mode-names|*.md|\\b(walk|sprint|vault|neural)\\b"
   "cat-11-tailwind-banned|*.ts*|\\b(text-muted-foreground|bg-primary|text-on-surface|border-outline-variant|shadow-elevation-)\\b"
+  "cat-12-v2refs|*.ts*|ui_kits/extension/v2|V2 contract"
+  "cat-13-tw-arbitrary|*.tsx|min-h-\\[|rounded-full|border-\\[var|bg-\\[var|text-\\[var|ring-\\[var|in_oklch"
+  "cat-14-md3-deps|*.ts*|material-color-utilities|generateMD3Theme|MD3Color|DynamicColorService|content/services/theme-manager"
+  "cat-15-tw-runtime|*.ts*|tailwind-merge|@tailwindcss|font-serif"
 )
 
 # Category 9 (emoji) is special: needs PCRE (\x{...}) which grep -E doesn't support.
@@ -127,5 +131,5 @@ if [[ "$total_violations" -gt 0 ]]; then
   exit 1
 fi
 
-echo "OK — Layer 10 baseline: 0 violations across 11 categories confirmed."
+echo "OK — Layer 10 baseline: 0 violations across 15 categories confirmed."
 exit 0

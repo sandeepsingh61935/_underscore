@@ -1,10 +1,7 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L548-625 (V2_Skeleton)
- * V2 contract:
- *   - Surface: --paper-2, 2px radius, prefers-reduced-motion renders at 0.5 opacity.
+ * Design contract: src/ui-system/theme/global.css (Skeleton section)
+ *   - Surface: --paper-2, --radius, prefers-reduced-motion renders at 0.5 opacity.
  *   - 5 variants: base | text | avatar | collectionCard | highlightCard.
- *   - Wireframe collectionCard: 320x64, 40px avatar + 32px action circles.
- *   - Wireframe highlightCard: 320x80, 4px left rule, 3 text lines + meta.
  */
 import React from 'react';
 
@@ -18,15 +15,15 @@ export interface SkeletonProps {
 }
 
 /**
- * V2 Skeleton — surface uses --paper-2; shimmer animation uses
+ * Editorial Skeleton — surface uses --paper-2; shimmer animation uses
  * --utility-overlay-08 for the highlight pass.
  */
 export function Skeleton({ className, animation = 'pulse', style }: SkeletonProps) {
   return (
     <div
       className={cn(
-        animation === 'pulse' && 'animate-pulse',
-        animation === 'shimmer' && 'animate-shimmer',
+        animation === 'pulse' && 'anim-pulse',
+        animation === 'shimmer' && 'anim-shimmer',
         className
       )}
       style={{
@@ -50,15 +47,15 @@ export function SkeletonText({
   animation = 'pulse',
 }: SkeletonProps & { lines?: number }) {
   return (
-    <div className={cn('space-y-2', className)}>
+    <div className={cn('skeleton-text-stack', className)}>
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton
           key={i}
           animation={animation}
           className={cn(
-            'h-4',
+            'skeleton-line',
             // Last line is shorter for visual variety
-            i === lines - 1 && lines > 1 && 'w-3/4'
+            i === lines - 1 && lines > 1 && 'skeleton-w-3-4'
           )}
         />
       ))}
@@ -75,15 +72,15 @@ export function SkeletonAvatar({
   animation = 'pulse',
 }: SkeletonProps & { size?: 'sm' | 'md' | 'lg' }) {
   const sizes = {
-    sm: 'w-8 h-8',
-    md: 'w-10 h-10',
-    lg: 'w-12 h-12',
+    sm: 'skeleton-avatar-sm',
+    md: 'skeleton-avatar-md',
+    lg: 'skeleton-avatar-lg',
   };
 
   return (
     <Skeleton
       animation={animation}
-      className={cn('rounded-full', sizes[size], className)}
+      className={cn('skeleton-round', sizes[size], className)}
     />
   );
 }
@@ -96,21 +93,18 @@ export function SkeletonCollectionCard({
   animation = 'pulse',
 }: SkeletonProps) {
   return (
-    <div
-      className={cn('flex items-center gap-4 p-4 rounded', className)}
-      style={{ backgroundColor: 'var(--paper-2)', border: '1px solid var(--rule-soft)' }}
-    >
+    <div className={cn('skeleton-card', className)}>
       {/* Favicon placeholder */}
-      <Skeleton animation={animation} className="shrink-0 w-10 h-10 rounded-lg" />
+      <Skeleton animation={animation} className="skeleton-fav" />
 
       {/* Content */}
-      <div className="flex-1 space-y-2">
-        <Skeleton animation={animation} className="h-4 w-3/4" />
-        <Skeleton animation={animation} className="h-3 w-1/2" />
+      <div className="skeleton-body">
+        <Skeleton animation={animation} className="skeleton-line skeleton-w-3-4" />
+        <Skeleton animation={animation} className="skeleton-line-sm skeleton-w-1-2" />
       </div>
 
       {/* Arrow placeholder */}
-      <Skeleton animation={animation} className="shrink-0 w-8 h-8 rounded-full" />
+      <Skeleton animation={animation} className="skeleton-action" />
     </div>
   );
 }
@@ -120,25 +114,18 @@ export function SkeletonCollectionCard({
  */
 export function SkeletonHighlightCard({ className, animation = 'pulse' }: SkeletonProps) {
   return (
-    <div
-      className={cn('p-4 rounded', className)}
-      style={{
-        backgroundColor: 'var(--paper-2)',
-        border: '1px solid var(--rule-soft)',
-        borderLeft: '4px solid var(--rule-soft)',
-      }}
-    >
+    <div className={cn('skeleton-hl', className)}>
       {/* Text lines */}
-      <div className="space-y-2 mb-3">
-        <Skeleton animation={animation} className="h-4 w-full" />
-        <Skeleton animation={animation} className="h-4 w-11/12" />
-        <Skeleton animation={animation} className="h-4 w-3/4" />
+      <div className="skeleton-hl-lines">
+        <Skeleton animation={animation} className="skeleton-line skeleton-w-full" />
+        <Skeleton animation={animation} className="skeleton-line skeleton-w-11-12" />
+        <Skeleton animation={animation} className="skeleton-line skeleton-w-3-4" />
       </div>
 
       {/* Metadata */}
-      <div className="flex items-center gap-2">
-        <Skeleton animation={animation} className="h-3 w-16" />
-        <Skeleton animation={animation} className="h-3 w-24" />
+      <div className="skeleton-hl-meta">
+        <Skeleton animation={animation} className="skeleton-line-sm skeleton-w-16" />
+        <Skeleton animation={animation} className="skeleton-line-sm skeleton-w-24" />
       </div>
     </div>
   );
@@ -153,7 +140,7 @@ export function SkeletonCollectionsList({
   animation = 'pulse',
 }: SkeletonProps & { count?: number }) {
   return (
-    <div className={cn('flex flex-col gap-2', className)}>
+    <div className={cn('skeleton-stack', className)}>
       {Array.from({ length: count }).map((_, i) => (
         <SkeletonCollectionCard key={i} animation={animation} />
       ))}
@@ -170,7 +157,7 @@ export function SkeletonHighlightsList({
   animation = 'pulse',
 }: SkeletonProps & { count?: number }) {
   return (
-    <div className={cn('flex flex-col gap-3', className)}>
+    <div className={cn('skeleton-stack skeleton-stack-gap', className)}>
       {Array.from({ length: count }).map((_, i) => (
         <SkeletonHighlightCard key={i} animation={animation} />
       ))}

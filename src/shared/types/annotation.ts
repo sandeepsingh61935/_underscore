@@ -31,18 +31,18 @@ export interface AnnotationWithRange extends Annotation {
 }
 
 /**
- * Material Design 3 color with contrast
+ * Highlight color with contrast
  */
-export interface MD3Color {
+export interface HighlightColor {
   main: string; // Primary color
   on: string; // Text color on primary
   rgb: string; // RGB values for opacity
 }
 
 /**
- * Material Design 3 color palette
+ * Highlight color palette
  */
-export const MD3_COLORS: Record<string, MD3Color> = {
+export const HIGHLIGHT_COLORS: Record<string, HighlightColor> = {
   yellow: {
     main: '#FDD835',
     on: '#1A1A1A',

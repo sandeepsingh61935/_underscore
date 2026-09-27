@@ -34,10 +34,10 @@ describe('V2 Skeleton', () => {
       expect(el.className).not.toMatch(/rounded-md/);
     });
 
-    it('uses animate-pulse when animation=pulse', () => {
+    it('uses anim-pulse when animation=pulse', () => {
       const { container } = render(<Skeleton animation="pulse" />);
       const el = container.firstChild as HTMLElement;
-      expect(el.className).toMatch(/animate-pulse/);
+      expect(el.className).toMatch(/anim-pulse/);
     });
 
     it('applies custom className', () => {
@@ -57,19 +57,18 @@ describe('V2 Skeleton', () => {
   });
 
   describe('SkeletonAvatar', () => {
-    it('uses rounded-full (circle shape)', () => {
+    it('uses skeleton-round (circle shape)', () => {
       const { container } = render(<SkeletonAvatar size="md" />);
       const el = container.firstChild as HTMLElement;
-      expect(el.className).toMatch(/rounded-full/);
+      expect(el.className).toMatch(/skeleton-round/);
     });
   });
 
   describe('SkeletonCollectionCard', () => {
-    it('uses --rule-soft for the border (not MD3 border-border)', () => {
+    it('uses .skeleton-card class (--rule-soft border in CSS)', () => {
       const { container } = render(<SkeletonCollectionCard />);
       const el = container.firstChild as HTMLElement;
-      const style = el.getAttribute('style') ?? '';
-      expect(style).toContain('var(--rule-soft)');
+      expect(el.className).toMatch(/skeleton-card/);
     });
 
     it('does not use Style C bg-card / border-border utilities', () => {

@@ -45,13 +45,13 @@ describe('V2 ModeCard', () => {
     );
   });
 
-  it('active state uses V2 --accent surface and --paper text', () => {
-    const { baseElement } = render(
+  it('active state adds .is-active (--accent surface, --paper text in CSS)', () => {
+    const { container } = render(
       <ModeCard id="ephemeral" label="Focus" isActive onClick={vi.fn()} />
     );
-    const html = baseElement.innerHTML;
-    expect(html).toContain('var(--accent)');
-    expect(html).toContain('var(--paper)');
+    const btn = container.querySelector('button') as HTMLElement;
+    expect(btn.className).toMatch(/\bmode-card\b/);
+    expect(btn.className).toMatch(/\bis-active\b/);
   });
 
   it('does not use Style C, MD3, or shadcn utility classes', () => {
@@ -98,7 +98,7 @@ describe('V2 ModeCard', () => {
         onClick={vi.fn()}
       />
     );
-    const html = baseElement.innerHTML;
-    expect(html).toMatch(/font-(?:size|Size):\s*var\(--step-/);
+    const btn = baseElement.querySelector('button') as HTMLElement;
+    expect(btn.className).toMatch(/\bmode-card\b/);
   });
 });

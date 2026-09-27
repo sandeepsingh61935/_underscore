@@ -1,6 +1,6 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L827-850 (V2_Input)
- * V2 contract: 4 states (default/focus/error/disabled), 44px height,
+ * Design contract: src/ui-system/theme/global.css (Input)
+ * Design contract: 4 states (default/focus/error/disabled), 44px height,
  *   border 1px (var(--rule-soft) default | var(--accent) focus/error),
  *   2px focus ring var(--accent), background var(--paper).
  *   Error: helperText in var(--accent).
@@ -27,20 +27,16 @@ describe('Input (V2 wireframe contract)', () => {
     expect(style).toContain('var(--accent)');
   });
 
-  it('enforces 44px minimum height and paper fill via style', () => {
+  it('uses .input class (44px min-height, paper fill, --radius in CSS)', () => {
     render(<Input placeholder="Email" />);
     const input = screen.getByPlaceholderText('Email');
-    const style = input.getAttribute('style') ?? '';
-    expect(style).toMatch(/min-height:\s*44px/);
-    expect(style).toContain('var(--paper)');
-    expect(style).toContain('var(--radius)');
+    expect(input.className).toMatch(/\binput\b/);
   });
 
-  it('renders helperText in --accent when error is true', () => {
+  it('renders helperText with .is-error when error is true', () => {
     render(<Input placeholder="Email" error helperText="Required field" />);
     const helper = screen.getByText('Required field');
-    const style = helper.getAttribute('style') ?? '';
-    expect(style).toContain('var(--accent)');
+    expect(helper.className).toMatch(/is-error/);
   });
 
   it('forwards disabled to the underlying input element', () => {

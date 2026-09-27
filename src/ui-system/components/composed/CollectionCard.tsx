@@ -37,75 +37,34 @@ export function CollectionCard({
     <button
       onClick={onClick}
       aria-label={`Open ${domain} collection with ${count} ${count === 1 ? 'highlight' : 'highlights'}`}
-      className={cn(
-        'group relative flex items-center gap-4 p-4 w-full text-left',
-        'border border-[color:var(--rule-soft)] rounded min-h-[44px]',
-        'transition-colors duration-step-0 ease-standard',
-        'hover:border-[color:var(--rule)]',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2',
-        className
-      )}
-      style={{ backgroundColor: 'var(--paper)' }}
+      className={cn('collection-card', className)}
     >
       {/* Favicon */}
-      <div
-        className="shrink-0 w-10 h-10 rounded flex items-center justify-center overflow-hidden border"
-        style={{ backgroundColor: 'var(--paper-2)', borderColor: 'var(--rule-soft)' }}
-      >
+      <div className="cc-favicon">
         {showFavicon ? (
           <img
             src={favicon}
             alt={`${domain} favicon`}
-            className="w-6 h-6 object-contain"
             onError={handleFaviconError}
           />
         ) : null}
-        <Globe
-          className={cn('w-5 h-5', showFavicon && 'hidden')}
-          style={{ color: 'var(--ink-3)' }}
-        />
+        <Globe className={cn(!showFavicon && 'is-hidden')} aria-hidden="true" />
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h3
-            className="truncate"
-            style={{ fontSize: 'var(--step-0)', color: 'var(--ink)' }}
-          >
-            {domain}
-          </h3>
-          {category && (
-            <span
-              className="shrink-0 px-2 py-0.5 rounded-full"
-              style={{
-                fontSize: 'var(--step--1)',
-                color: 'var(--ink-3)',
-                backgroundColor: 'var(--paper-2)',
-              }}
-            >
-              {category}
-            </span>
-          )}
+      <div className="cc-body">
+        <div className="cc-title-row">
+          <h3 className="cc-title">{domain}</h3>
+          {category && <span className="cc-tag">{category}</span>}
         </div>
-        <p
-          className="mt-0.5"
-          style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}
-        >
+        <p className="cc-meta">
           {count} {count === 1 ? 'highlight' : 'highlights'}
         </p>
       </div>
 
-      {/* Arrow - animates on hover */}
-      <div
-        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-        style={{ backgroundColor: 'var(--paper-2)' }}
-        aria-hidden="true"
-      >
-        <ArrowRight
-          className="w-4 h-4 transition-transform duration-step-0 ease-standard"
-          style={{ color: 'var(--ink-3)' }}
-        />
+      {/* Arrow */}
+      <div className="cc-arrow" aria-hidden="true">
+        <ArrowRight aria-hidden="true" />
       </div>
     </button>
   );

@@ -94,7 +94,7 @@ describe('V2 AlertDialog', () => {
         </AlertDialogContent>
       </AlertDialog>
     );
-    expect(baseElement.innerHTML).toContain('var(--accent)');
+    expect(baseElement.innerHTML).toMatch(/\balert-action\b/);
   });
 
   it('AlertDialog action has 44px min touch target (V2 spec)', () => {
@@ -106,6 +106,6 @@ describe('V2 AlertDialog', () => {
       </AlertDialog>
     );
     const action = screen.getByText('OK');
-    expect(action.className).toMatch(/min-h-\[44px\]/);
+    expect(action.className).toMatch(/\balert-action\b/);
   });
 });

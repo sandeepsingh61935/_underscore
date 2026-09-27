@@ -34,13 +34,12 @@ describe('V2 CollectionCard', () => {
     expect(onClick).toHaveBeenCalledOnce();
   });
 
-  it('active surface uses V2 --paper, border uses --rule-soft', () => {
-    const { baseElement } = render(
+  it('uses .collection-card class (--paper surface, --rule-soft border in CSS)', () => {
+    const { container } = render(
       <CollectionCard domain="github.com" count={2} onClick={vi.fn()} />
     );
-    const html = baseElement.innerHTML;
-    expect(html).toContain('var(--paper)');
-    expect(html).toContain('var(--rule-soft)');
+    const btn = container.querySelector('button') as HTMLElement;
+    expect(btn.className).toMatch(/\bcollection-card\b/);
   });
 
   it('does not use Style C, MD3, or shadcn utility classes', () => {

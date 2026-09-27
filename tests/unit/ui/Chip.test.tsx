@@ -14,17 +14,10 @@ describe('V2 Chip', () => {
       expect(screen.getByRole('button', { name: 'Tag' })).toBeInTheDocument();
     });
 
-    it('uses V2 --rule-soft border (not MD3 border-outline-variant)', () => {
+    it('uses .chip-filter class (--rule-soft border, ink text in CSS)', () => {
       const { container } = render(<Chip>x</Chip>);
-      const html = container.innerHTML;
-      expect(html).toContain('var(--rule-soft)');
-    });
-
-    it('uses a V2 ink token for text (not MD3 text-on-surface)', () => {
-      const { container } = render(<Chip>x</Chip>);
-      const html = container.innerHTML;
-      // --ink (default) or --ink-2 (muted) are both V2 — at least one must appear
-      expect(html).toMatch(/var\(--ink(?:-[0-9])?\)/);
+      const el = container.querySelector('button') as HTMLElement;
+      expect(el.className).toMatch(/\bchip-filter\b/);
     });
   });
 

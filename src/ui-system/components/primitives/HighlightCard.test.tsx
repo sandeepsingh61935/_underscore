@@ -1,5 +1,5 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L767-795 (V2_HighlightCard)
+ * Design contract: src/ui-system/theme/global.css (HighlightCard)
  * Edit + format tools live in edit mode; read surface has no presentation chips.
  */
 import React from 'react';

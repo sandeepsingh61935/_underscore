@@ -1,8 +1,8 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L532-546 (V2_Spinner)
- * V2 contract:
+ * Design contract: src/ui-system/theme/global.css (Spinner)
+ * Design contract:
  *   - 2px solid ring, border-radius 50%, default border var(--rule-soft),
- *     border-top-color var( --accent ) (the rotating edge).
+ *     border-top-color var(--accent) (the rotating edge).
  *   - sm/md/lg sizes from SPINNER_SIZES map (16/24/32 in current impl).
  *   - role="status", aria-label="Loading" for a11y.
  */
@@ -18,42 +18,32 @@ describe('Spinner (V2 wireframe contract)', () => {
     expect(screen.getByRole('status', { name: /loading/i })).toBeTruthy();
   });
 
-  it('routes border-top-color to var(--accent)', () => {
+  it('uses .spinner class (accent top edge, --rule-soft ring in CSS)', () => {
     const { container } = render(<Spinner />);
     const el = container.firstElementChild as HTMLElement;
-    const style = el.getAttribute('style') ?? '';
-    expect(style).toContain('border-top-color: var(--accent)');
+    expect(el.className).toMatch(/\bspinner\b/);
   });
 
-  it('routes default border (right/bottom/left) to var(--rule-soft)', () => {
+  it('default size md uses .spinner-md (24px in CSS)', () => {
     const { container } = render(<Spinner />);
     const el = container.firstElementChild as HTMLElement;
-    const style = el.getAttribute('style') ?? '';
-    expect(style).toContain('var(--rule-soft)');
+    expect(el.className).toMatch(/\bspinner-md\b/);
   });
 
-  it('default size md renders 24px (w-6 h-6 in current Tailwind impl)', () => {
-    const { container } = render(<Spinner />);
-    const el = container.firstElementChild as HTMLElement;
-    // Current impl uses Tailwind w-6 h-6 for md (24px)
-    expect(el.className).toMatch(/w-6/);
-    expect(el.className).toMatch(/h-6/);
-  });
-
-  it('size sm renders 16px, size lg renders 32px', () => {
+  it('size sm uses .spinner-sm, size lg uses .spinner-lg', () => {
     const { container: a } = render(<Spinner size="sm" />);
     const { container: b } = render(<Spinner size="lg" />);
     const sm = a.firstElementChild as HTMLElement;
     const lg = b.firstElementChild as HTMLElement;
-    expect(sm.className).toMatch(/w-4/);
-    expect(lg.className).toMatch(/w-8/);
+    expect(sm.className).toMatch(/\bspinner-sm\b/);
+    expect(lg.className).toMatch(/\bspinner-lg\b/);
   });
 
-  it('is fully round (rounded-full class or border-radius: 50%)', () => {
+  it('is fully round (spinner class, 50% radius)', () => {
     const { container } = render(<Spinner />);
     const el = container.firstElementChild as HTMLElement;
-    // Current impl uses Tailwind rounded-full
-    const isRoundClass = /\brounded-full\b/.test(el.className);
+    // Plain-CSS spinner: 50% radius + accent top edge
+    const isRoundClass = /\bspinner\b/.test(el.className);
     const isRoundStyle = (el.getAttribute('style') ?? '').includes('border-radius: 50%');
     expect(isRoundClass || isRoundStyle).toBe(true);
   });

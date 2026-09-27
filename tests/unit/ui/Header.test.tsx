@@ -73,11 +73,10 @@ describe('V2 Header (deprecated — use AppHeader)', () => {
     expect(screen.queryByRole('button', { name: 'Dashboard' })).not.toBeInTheDocument();
   });
 
-  it('uses V2 --paper surface and --rule-soft border on the header', () => {
-    const { baseElement } = renderHeader({ isAuthenticated: false, user: null });
-    const html = baseElement.innerHTML;
-    expect(html).toContain('var(--paper)');
-    expect(html).toContain('var(--rule-soft)');
+  it('uses .web-header class (--paper surface, --rule-soft border in CSS)', () => {
+    const { container } = renderHeader({ isAuthenticated: false, user: null });
+    const header = container.querySelector('header') as HTMLElement;
+    expect(header.className).toMatch(/\bweb-header\b/);
   });
 
   it('does not use Style C, MD3, or shadcn utility classes', () => {
@@ -95,9 +94,9 @@ describe('V2 Header (deprecated — use AppHeader)', () => {
     expect(html).not.toMatch(/text-destructive/);
   });
 
-  it('has 44px minimum touch target on action buttons', () => {
-    const { baseElement } = renderHeader({ isAuthenticated: true, user });
-    const html = baseElement.innerHTML;
-    expect(html).toMatch(/min-h-\[44px\]/);
+  it('action buttons use .nav-link / .account-btn (44px targets in CSS)', () => {
+    const { container } = renderHeader({ isAuthenticated: true, user });
+    const html = container.innerHTML;
+    expect(html).toMatch(/\bnav-link\b|\baccount-btn\b/);
   });
 });

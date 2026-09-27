@@ -63,8 +63,8 @@ export const Header: React.FC<HeaderProps> = ({
     label: string;
     icon: React.ReactNode;
   }> = [
-    { id: 'light', label: 'Light', icon: <Sun className="w-4 h-4" /> },
-    { id: 'dark', label: 'Dark', icon: <Moon className="w-4 h-4" /> },
+    { id: 'light', label: 'Light', icon: <Sun aria-hidden="true" /> },
+    { id: 'dark', label: 'Dark', icon: <Moon aria-hidden="true" /> },
   ];
 
   const handleLogout = (): void => {
@@ -77,48 +77,25 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header
-      className="w-full sticky top-0 z-50"
-      style={{
-        backgroundColor: 'var(--paper)',
-        borderBottom: '1px solid var(--rule-soft)',
-      }}
-    >
-      <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link
-          to="/"
-          className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer group"
-        >
-          <CheckSquare
-            className="w-6 h-6 transition-transform duration-step-0 ease-standard"
-            style={{ color: 'var(--ink-2)' }}
-          />
-          <h2
-            className="tracking-tight"
-            style={{ fontSize: 'var(--step-1)', color: 'var(--ink)' }}
-          >
-            _underscore
-          </h2>
+    <header className="web-header">
+      <div className="web-header-inner">
+        <Link to="/" className="brand-link">
+          <CheckSquare aria-hidden="true" />
+          <h2 className="brand-name">_underscore</h2>
         </Link>
 
-        <div className="flex items-center gap-6">
+        <div className="web-nav">
           {isAuthenticated && (
             <button
               type="button"
               onClick={() => navigate('/library')}
-              className="hidden sm:inline-flex min-h-[44px] items-center rounded px-3 transition-colors duration-step-0 ease-standard hover:text-[color:var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
-              style={{ fontSize: 'var(--step-0)', color: 'var(--ink-3)' }}
+              className="nav-link"
             >
               Dashboard
             </button>
           )}
 
-          {isAuthenticated && (
-            <div
-              className="h-4 w-px hidden sm:block"
-              style={{ backgroundColor: 'var(--rule-soft)' }}
-            ></div>
-          )}
+          {isAuthenticated && <div className="nav-divider"></div>}
 
           {isAuthenticated && user
             ? showUserMenu && (
@@ -127,81 +104,52 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                       type="button"
                       aria-label={`Open account menu for ${user.displayName}`}
-                      className="flex min-h-[44px] min-w-[44px] items-center gap-3 cursor-pointer rounded-full p-1.5 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
+                      className="account-btn"
                     >
-                      <div className="text-right hidden md:block">
-                        <span
-                          className="block"
-                          style={{ fontSize: 'var(--step--1)', color: 'var(--ink)' }}
-                        >
-                          {user.displayName}
-                        </span>
+                      <div className="account-meta">
+                        <span className="account-name">{user.displayName}</span>
                       </div>
-                      <div
-                        className="h-9 w-9 rounded-full bg-cover bg-center border overflow-hidden"
-                        style={{ borderColor: 'var(--rule-soft)' }}
-                      >
+                      <div className="avatar">
                         {user.photoUrl ? (
-                          <img
-                            src={user.photoUrl}
-                            alt={user.displayName}
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={user.photoUrl} alt={user.displayName} />
                         ) : (
-                          <div
-                            className="w-full h-full flex items-center justify-center"
-                            style={{
-                              backgroundColor: 'var(--accent)',
-                              color: 'var(--accent-ink)',
-                              fontSize: 'var(--step-0)',
-                            }}
-                          >
+                          <div className="avatar-fallback">
                             {user.displayName.charAt(0).toUpperCase()}
                           </div>
                         )}
                       </div>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64">
-                    <div className="px-4 py-3">
-                      <p
-                        className="uppercase truncate"
-                        style={{
-                          fontSize: 'var(--step--1)',
-                          color: 'var(--ink-3)',
-                          letterSpacing: '0.15em',
-                        }}
-                      >
-                        {user.email}
-                      </p>
+                  <DropdownMenuContent align="end" className="menu-content-wide">
+                    <div className="menu-head">
+                      <p className="menu-email">{user.email}</p>
                     </div>
 
                     <DropdownMenuSeparator />
 
                     <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer">
-                        <Settings className="w-4 h-4" />
+                      <DropdownMenuSubTrigger>
+                        <Settings aria-hidden="true" />
                         <span>Settings</span>
                       </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="w-56">
+                      <DropdownMenuSubContent className="menu-sub-content-wide">
                         <DropdownMenuSub>
-                          <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer">
-                            <Sun className="w-4 h-4" />
+                          <DropdownMenuSubTrigger>
+                            <Sun aria-hidden="true" />
                             <span>Theme</span>
                           </DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent>
+                          <DropdownMenuSubContent className="menu-sub-content-wide">
                             {themes.map((t) => (
                               <DropdownMenuItem
                                 key={t.id}
                                 onClick={() => setTheme(t.id)}
-                                className="flex items-center gap-2 cursor-pointer"
                               >
                                 {t.icon}
                                 <span>{t.label}</span>
                                 {theme === t.id && (
                                   <Check
-                                    className="ml-auto w-4 h-4"
-                                    style={{ color: 'var(--accent)' }}
+                                    className="check-inline"
+                                    aria-hidden="true"
                                   />
                                 )}
                               </DropdownMenuItem>
@@ -209,37 +157,25 @@ export const Header: React.FC<HeaderProps> = ({
                           </DropdownMenuSubContent>
                         </DropdownMenuSub>
 
-                        <DropdownMenuItem className="flex items-center gap-2 cursor-pointer opacity-50 pointer-events-none">
-                          <Palette className="w-4 h-4" />
+                        <DropdownMenuItem disabled>
+                          <Palette aria-hidden="true" />
                           <span>Brand Color</span>
-                          <span
-                            className="ml-auto"
-                            style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}
-                          >
-                            Coming soon
-                          </span>
+                          <span className="menu-note">Coming soon</span>
                         </DropdownMenuItem>
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
 
                     <DropdownMenuItem asChild>
-                      <Link
-                        to="/privacy"
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <Lock className="w-4 h-4" />
+                      <Link to="/privacy">
+                        <Lock aria-hidden="true" />
                         <span>Privacy</span>
                       </Link>
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator />
 
-                    <DropdownMenuItem
-                      onClick={handleLogout}
-                      className="cursor-pointer"
-                      style={{ color: 'var(--ink)' }}
-                    >
-                      <LogOut className="w-4 h-4" />
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <LogOut aria-hidden="true" />
                       <span>Sign out</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>

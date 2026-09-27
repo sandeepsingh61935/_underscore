@@ -1,10 +1,10 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L1019-1037 (V2_Text)
- * V2 contract:
+ * Design contract: src/ui-system/theme/global.css (Text)
+ * Design contract:
  *   - step + family params map to size + u-serif|u-sans|u-mono class.
  *   - 9 step-scale sizes; families sans/serif/mono.
  *
- * Note: current impl uses variant-based step map (MD3-style ramp) but
+ * Note: current impl uses a variant-based step map but
  * routes to V2 step tokens. No family prop is exposed yet; family-class
  * routing is a future cycle. Tests lock what the public contract exposes.
  */
@@ -44,9 +44,9 @@ interface TextProps extends HTMLAttributes<HTMLElement> {
 }
 
 /**
- * V2 step scale. Maps the legacy MD3 type-scale variants to V2 --step-*
+ * Editorial step scale. Maps the legacy type-scale variant names to Editorial --step-*
  * tokens (10/11/13/15/18/22/28/36/48). The step scale is intentionally
- * smaller than MD3's 13-variant scale — V2 favors fewer, larger jumps.
+ * smaller than the legacy 13-variant scale — Editorial favors fewer, larger jumps.
  */
 const variantStepMap: Record<TextVariant, string> = {
   displayLarge: 'var(--step-6)',
@@ -104,7 +104,7 @@ const Text = forwardRef<HTMLElement, TextProps>(
       <Component
         ref={ref}
         className={cn(
-          'font-serif',
+          'u-serif',
           isLink && 'cursor-pointer hover:underline',
           className
         )}

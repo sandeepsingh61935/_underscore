@@ -1,6 +1,6 @@
 /**
- * Wireframe: ui_kits/extension/v2/primitives.jsx L548-625 (V2_Skeleton)
- * V2 contract:
+ * Design contract: src/ui-system/theme/global.css (Skeleton)
+ * Design contract:
  *   - Surface: --paper-2, 2px radius, prefers-reduced-motion renders at 0.5 opacity.
  *   - 5 variants: base | text | avatar | collectionCard | highlightCard.
  *   - Wireframe collectionCard: 320x64, 40px avatar + 32px action circles.
@@ -29,14 +29,14 @@ describe('Skeleton (V2 wireframe contract)', () => {
   it('base Skeleton uses pulse animation by default', () => {
     const { container } = render(<Skeleton />);
     const el = container.firstElementChild as HTMLElement;
-    expect(el.className).toMatch(/animate-pulse/);
+    expect(el.className).toMatch(/anim-pulse/);
   });
 
   it('base Skeleton animation=none skips animation class', () => {
     const { container } = render(<Skeleton animation="none" />);
     const el = container.firstElementChild as HTMLElement;
-    expect(el.className).not.toMatch(/animate-pulse/);
-    expect(el.className).not.toMatch(/animate-shimmer/);
+    expect(el.className).not.toMatch(/anim-pulse/);
+    expect(el.className).not.toMatch(/anim-shimmer/);
   });
 
   it('shimmer animation sets up linear-gradient with --utility-overlay-08', () => {
@@ -53,28 +53,22 @@ describe('Skeleton (V2 wireframe contract)', () => {
     expect(lines.length).toBeGreaterThanOrEqual(3);
   });
 
-  it('SkeletonAvatar renders circular (rounded-full) at md=40px', () => {
+  it('SkeletonAvatar renders circular (skeleton-round) at md=40px', () => {
     const { container } = render(<SkeletonAvatar size="md" />);
-    const el = container.querySelector('[class*="rounded-full"]') as HTMLElement;
+    const el = container.querySelector('[class*="skeleton-round"]') as HTMLElement;
     expect(el).toBeTruthy();
-    expect(el.className).toMatch(/w-10/);
-    expect(el.className).toMatch(/h-10/);
+    expect(el.className).toMatch(/skeleton-avatar-md/);
   });
 
-  it('SkeletonCollectionCard uses --paper-2 + --rule-soft border', () => {
+  it('SkeletonCollectionCard uses .skeleton-card (--paper-2 + --rule-soft in CSS)', () => {
     const { container } = render(<SkeletonCollectionCard />);
     const root = container.firstElementChild as HTMLElement;
-    const style = root.getAttribute('style') ?? '';
-    expect(style).toContain('var(--paper-2)');
-    expect(style).toContain('var(--rule-soft)');
+    expect(root.className).toMatch(/\bskeleton-card\b/);
   });
 
-  it('SkeletonHighlightCard uses --paper-2 + --rule-soft + 4px left rule', () => {
+  it('SkeletonHighlightCard uses .skeleton-hl (paper + 4px left rule in CSS)', () => {
     const { container } = render(<SkeletonHighlightCard />);
     const root = container.firstElementChild as HTMLElement;
-    const style = root.getAttribute('style') ?? '';
-    expect(style).toContain('var(--paper-2)');
-    expect(style).toContain('var(--rule-soft)');
-    expect(style).toContain('border-left: 4px solid var(--rule-soft)');
+    expect(root.className).toMatch(/\bskeleton-hl\b/);
   });
 });

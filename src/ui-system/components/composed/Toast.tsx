@@ -162,44 +162,17 @@ function ToastItem({ toast, onDismiss }: ToastItemProps): React.ReactElement {
   }, [toast.id, toast.duration, onDismiss]);
 
   return (
-    <div
-      className={cn(
-        'pointer-events-auto flex items-start gap-3 p-4 rounded border',
-        'animate-slideInUp'
-      )}
-      style={{
-        backgroundColor: 'var(--paper)',
-        color: 'var(--ink)',
-        borderColor: 'var(--rule-soft)',
-      }}
-      role="alert"
-    >
-      <Icon className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
+    <div className={cn('toast-item anim-slide-up')} role="alert">
+      <Icon className="toast-icon" aria-hidden="true" />
 
-      <div className="flex-1 min-w-0">
-        <p
-          className="font-medium"
-          style={{ fontSize: 'var(--step-0)', color: 'var(--ink)' }}
-        >
-          {toast.title}
-        </p>
-        {toast.description && (
-          <p
-            className="mt-1"
-            style={{ fontSize: 'var(--step--1)', color: 'var(--ink-3)' }}
-          >
-            {toast.description}
-          </p>
-        )}
+      <div className="toast-body">
+        <p className="toast-title">{toast.title}</p>
+        {toast.description && <p className="toast-desc">{toast.description}</p>}
         {toast.action && (
           <button
             type="button"
             onClick={toast.action.onClick}
-            className="mt-2 inline-flex min-h-[44px] items-center rounded px-3 -ml-3 transition-colors duration-step-0 ease-standard hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
-            style={{
-              fontSize: 'var(--step-0)',
-              color: 'var(--accent)',
-            }}
+            className="text-btn toast-action"
           >
             {toast.action.label}
           </button>
@@ -209,11 +182,10 @@ function ToastItem({ toast, onDismiss }: ToastItemProps): React.ReactElement {
       <button
         type="button"
         onClick={() => onDismiss(toast.id)}
-        className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded transition-colors duration-step-0 ease-standard hover:bg-[color:var(--paper-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2"
-        style={{ color: 'var(--ink-3)' }}
+        className="icon-btn"
         aria-label="Dismiss"
       >
-        <X className="w-4 h-4" />
+        <X aria-hidden="true" />
       </button>
     </div>
   );

@@ -25,10 +25,10 @@ describe('V2 UserMenu', () => {
     expect(screen.getByText('J')).toBeInTheDocument();
   });
 
-  it('trigger has 44px minimum touch target', () => {
-    const { baseElement } = render(<UserMenu user={user} onLogout={vi.fn()} />);
-    const html = baseElement.innerHTML;
-    expect(html).toMatch(/min-h-\[44px\]/);
+  it('trigger uses .account-btn (44px target in CSS)', () => {
+    const { container } = render(<UserMenu user={user} onLogout={vi.fn()} />);
+    const html = container.innerHTML;
+    expect(html).toMatch(/\baccount-btn\b/);
   });
 
   it('does not use Style C, MD3, or shadcn utility classes', () => {
@@ -45,9 +45,9 @@ describe('V2 UserMenu', () => {
     expect(html).not.toMatch(/ring-border/);
   });
 
-  it('uses V2 --paper for the trigger avatar fallback', () => {
-    const { baseElement } = render(<UserMenu user={user} onLogout={vi.fn()} />);
-    const html = baseElement.innerHTML;
-    expect(html).toContain('var(--accent)');
+  it('uses .avatar-fallback (--accent surface in CSS)', () => {
+    const { container } = render(<UserMenu user={user} onLogout={vi.fn()} />);
+    const html = container.innerHTML;
+    expect(html).toMatch(/\bavatar-fallback\b/);
   });
 });

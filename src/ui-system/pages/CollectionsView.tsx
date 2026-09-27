@@ -67,48 +67,45 @@ export function CollectionsView({
   });
 
   return (
-    <div className={cn('flex flex-col h-full', className)}>
+    <div className={cn('collections-view', className)}>
       {/* Header Controls */}
-      <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="cv-controls">
         {/* Mode Switcher (New Navigation Fix) */}
         {mode && onModeChange && (
           <button
             onClick={() => onModeChange('basic')}
             // Mode selection page removed — fallback to collections/home
-            className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="mode-back"
             aria-label="Change mode"
             title="Change mode"
           >
-            <span className="flex items-center gap-1 text-label-small uppercase tracking-[0.15em]">
-              <span className="text-title-large leading-none">←</span> {mode}
+            <span className="mode-back-label">
+              <span className="mode-back-arrow">←</span> {mode}
             </span>
           </button>
         )}
 
         {/* Search */}
-        <div className="relative flex-1 max-w-xs">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
-            aria-hidden="true"
-          />
+        <div className="search-wrap">
+          <Search className="search-icon" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search collections..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             aria-label="Search collections"
-            className="w-full pl-9 pr-3 py-2 text-body-medium bg-secondary/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground"
+            className="search-input"
           />
         </div>
 
         {/* View & Sort Controls */}
-        <div className="flex items-center gap-2">
+        <div className="cv-tools">
           {/* Sort Dropdown */}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
             aria-label="Sort collections by"
-            className="px-3 py-2 text-label-large bg-secondary/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+            className="toolbar-select"
           >
             <option value="recent">Recent</option>
             <option value="alphabetical">A-Z</option>
@@ -117,7 +114,7 @@ export function CollectionsView({
 
           {/* View Toggle */}
           <div
-            className={cn(tonalPillShellClass, 'gap-0.5')}
+            className={cn(tonalPillShellClass)}
             role="group"
             aria-label="View mode"
           >
@@ -126,26 +123,26 @@ export function CollectionsView({
               onClick={() => setViewMode('list')}
               className={cn(
                 tonalPillBaseClass,
-                'flex h-8 w-8 items-center justify-center p-0',
+                'pill-icon',
                 viewMode === 'list' ? tonalPillActiveClass : tonalPillInactiveClass
               )}
               aria-label="List view"
               aria-pressed={viewMode === 'list'}
             >
-              <List className="w-4 h-4" aria-hidden="true" />
+              <List aria-hidden="true" />
             </button>
             <button
               type="button"
               onClick={() => setViewMode('grid')}
               className={cn(
                 tonalPillBaseClass,
-                'flex h-8 w-8 items-center justify-center p-0',
+                'pill-icon',
                 viewMode === 'grid' ? tonalPillActiveClass : tonalPillInactiveClass
               )}
               aria-label="Grid view"
               aria-pressed={viewMode === 'grid'}
             >
-              <Grid className="w-4 h-4" aria-hidden="true" />
+              <Grid aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -155,8 +152,7 @@ export function CollectionsView({
       {sortedCollections.length > 0 ? (
         <div
           className={cn(
-            'flex-1 overflow-y-auto scrollbar-hide',
-            viewMode === 'grid' ? 'grid grid-cols-2 gap-3' : 'flex flex-col gap-2'
+viewMode === 'grid' ? 'toolbar-grid' : 'toolbar-list'
           )}
         >
           {sortedCollections.map((collection) => (
@@ -171,14 +167,14 @@ export function CollectionsView({
           ))}
         </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-          <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-            <Search className="w-8 h-8 text-muted-foreground" />
+        <div className="empty-state">
+          <div className="empty-icon">
+            <Search aria-hidden="true" />
           </div>
-          <h3 className="text-title-medium text-foreground mb-1">
+          <h3 className="empty-title">
             {searchQuery ? 'No collections found' : 'No collections yet'}
           </h3>
-          <p className="text-body-small text-muted-foreground max-w-xs">
+          <p className="empty-desc">
             {searchQuery
               ? `No collections match "${searchQuery}"`
               : 'Start highlighting content on websites to build your collection.'}
@@ -191,14 +187,14 @@ export function CollectionsView({
         <button
           onClick={onAddNew}
           aria-label="Add new collection"
-          className="fixed bottom-6 right-6 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-short ease-standard focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
+          className="fab"
         >
-          <Plus className="w-5 h-5" aria-hidden="true" />
+          <Plus aria-hidden="true" />
         </button>
       )}
 
       {/* Stats Footer */}
-      <div className="pt-3 mt-3 border-t border-border text-label-small text-muted-foreground text-center">
+      <div className="stats-footer">
         {collections.length} collections •{' '}
         {collections.reduce((sum, c) => sum + c.count, 0)} total highlights
       </div>
