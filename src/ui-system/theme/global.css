@@ -3536,7 +3536,10 @@ button.sr-icon.is-delete:active {
   outline: none;
   box-shadow: 0 0 0 2px var(--accent);
 }
-.hl-actions {
+/* Overlay actions for the extension popup card only — scoped so the rule
+   never leaks onto web surfaces (web-app.css defines its own in-flow
+   .hl-actions footer; both stylesheets load in the web app). */
+.hl-card > .hl-actions {
   position: absolute;
   top: 12px;
   right: 12px;

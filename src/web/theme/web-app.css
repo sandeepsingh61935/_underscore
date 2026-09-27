@@ -1589,6 +1589,11 @@ button.nav-item,
 }
 
 .hl-actions {
+  /* In-flow footer row. position is reset explicitly: global.css also
+     defines .hl-actions (scoped overlay for the extension card) and both
+     stylesheets load in the web app — without this, cascade leftovers
+     (position/top/right) would hoist the row out of the card. */
+  position: static;
   display: flex;
   align-items: center;
   justify-content: flex-end;
