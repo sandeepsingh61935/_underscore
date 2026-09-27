@@ -4,7 +4,7 @@ description: V2 Editorial design tokens reference for _underscore. Single source
 
 # V2 Tokens Reference
 
-The V2 Editorial design system uses a pure CSS custom properties approach. Source of truth: `ui_kits/extension/v2/tokens.css` and `src/ui-system/theme/global.css`.
+The V2 Editorial design system uses a pure CSS custom properties approach. Source of truth: `src/ui-system/theme/global.css` and `src/ui-system/theme/global.css`.
 
 ---
 

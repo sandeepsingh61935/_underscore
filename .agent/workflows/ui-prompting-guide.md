@@ -21,14 +21,14 @@ description: How to write effective prompts for AI to generate high-quality V2 E
 Create a V2 Editorial [ComponentName] component.
 
 ## Constraints
-- MUST match the wireframe JSX in `ui_kits/extension/v2/` exactly
+- MUST match the wireframe JSX in `src/ui-system/theme/global.css` + `src/ui-system/components/primitives/` exactly
 - MUST use V2 CSS custom properties: var(--paper), var(--ink), var(--accent), var(--rule), var(--step-*), var(--radius)
 - MUST NOT use: MD3 tokens (--md-sys-*), Ink & Glass vars (--ink-1..4), Style C aliases (--bg, --text-primary), Tailwind utilities, hardcoded hex colors
 - MUST meet 44px minimum touch targets (V2 spec rule 7)
 - Popup views MUST be body-only — never import PopupShell, ModeHeader, or TabBar
 
 ## Reference First
-Read the wireframe in `ui_kits/extension/v2/` for this component:
+Read the wireframe in `src/ui-system/theme/global.css` + `src/ui-system/components/primitives/` for this component:
 - Visual structure and layout
 - Token usage (look at style={{ }} attributes in the JSX)
 - Semantic typography classes used (u-serif, u-kicker, u-mono)
@@ -76,7 +76,7 @@ The current [ComponentName] has legacy tokens. Migrate it to V2 Editorial.
 ## Key Phrases to Include in Any UI Prompt
 
 **Force Wireframe Reference:**
-> "Before implementing, read the wireframe JSX in `ui_kits/extension/v2/` for this component"
+> "Before implementing, read the wireframe JSX in `src/ui-system/theme/global.css` + `src/ui-system/components/primitives/` for this component"
 
 **Force V2 Token Usage:**
 > "All colors MUST come from V2 tokens: var(--paper), var(--ink), var(--accent), var(--rule). No MD3 tokens. No Tailwind utilities. No hardcoded hex."
@@ -106,7 +106,7 @@ The current [ComponentName] has legacy tokens. Migrate it to V2 Editorial.
 ### Good (V2 Editorial)
 > "Create a V2 Editorial Button component.
 >
-> First, read `ui_kits/extension/v2/primitives.jsx` for the Button wireframe.
+> First, read `src/ui-system/components/primitives/` for the Button wireframe.
 >
 > Use these V2 tokens exactly:
 > - background: var(--accent)

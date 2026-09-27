@@ -5,7 +5,7 @@ description: V2 Editorial token lookup table for all styling decisions in the _u
 
 # V2 Design Tokens Reference
 
-This file is the single source of truth for atomic styling decisions in the V2 Editorial design system. Source: `ui_kits/extension/v2/tokens.css` and `src/ui-system/theme/global.css`. Never guess; look it up here.
+This file is the single source of truth for atomic styling decisions in the V2 Editorial design system. Source: `src/ui-system/theme/global.css` and `src/ui-system/theme/global.css`. Never guess; look it up here.
 
 ---
 

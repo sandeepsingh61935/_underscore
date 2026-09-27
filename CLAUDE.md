@@ -89,7 +89,7 @@ When working on ANY UI code (components, views, styles), you MUST:
 1. Announce: "Starting UI work on [component]. Following `/ui-preflight`
    checklist."
 2. Read `.agent/workflows/ui-preflight.md` before coding
-3. Reference wireframe JSX in `ui_kits/extension/v2/`
+3. Reference wireframe JSX in `src/ui-system/theme/global.css` + `src/ui-system/components/primitives/`
 
 ### Non-Negotiables
 
@@ -107,7 +107,7 @@ When working on ANY UI code (components, views, styles), you MUST:
   `.u-kicker`, `.u-caps`.
 - **Always** use `var(--rule)` or `var(--rule-soft)` for borders.
 - **Always** use `var(--step-*)` scale for font sizes.
-- **Always** reference wireframe JSX in `ui_kits/extension/v2/` as the
+- **Always** reference wireframe JSX in `src/ui-system/theme/global.css` + `src/ui-system/components/primitives/` as the
   implementation spec.
 
 ### Design System: V2 "Editorial" (Layer 10 Locked - Post-Purge)
@@ -115,7 +115,7 @@ When working on ANY UI code (components, views, styles), you MUST:
 - STATUS: **Layer 10 Locked (Post-Purge)**. No legacy tokens or Tailwind classes
   exist in the codebase.
 - It is a pure CSS custom properties approach with zero Tailwind dependencies.
-- You must exactly match the wireframes in `ui_kits/extension/v2/`.
+- You must exactly match the wireframes in `src/ui-system/theme/global.css` + `src/ui-system/components/primitives/`.
 
 ### V2 Popup Chrome Ownership (enforced 2026-06-03)
 

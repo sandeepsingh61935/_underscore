@@ -12,14 +12,14 @@ description: Pre-flight checklist that MUST be followed before any UI work - enf
 
 ## Phase 1: Context Gathering
 
-- [ ] Read the wireframe JSX in `ui_kits/extension/v2/` for this component
+- [ ] Read the wireframe JSX in `src/ui-system/theme/global.css` + `src/ui-system/components/primitives/` for this component
 - [ ] Check existing primitives in `src/ui-system/components/primitives/`
 - [ ] Identify which V2 tokens apply (surface: `--paper`/`--paper-2`; text: `--ink`/`--ink-2..4`; border: `--rule`/`--rule-soft`; accent: `--accent`)
 - [ ] Confirm popup vs. web context (popup = body-only, PopupShell owns chrome)
 
 ## Phase 2: Token Constraints
 
-- [ ] All colors use ONLY V2 tokens from `ui_kits/extension/v2/tokens.css`
+- [ ] All colors use ONLY V2 tokens from `src/ui-system/theme/global.css`
 - [ ] No hardcoded hex values (e.g. `#FF0000`, `#fff`, `rgba(0,0,0,0.5)`)
 - [ ] No legacy MD3 tokens (`--md-sys-color-*`, `bg-primary`, `text-on-surface`)
 - [ ] No Ink & Glass tokens (`--ink-1..4`, `--ink-focus`, `--ink-neural`, `--ink-mode`, `--ink-ease-*`)

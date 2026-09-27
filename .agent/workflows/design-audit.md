@@ -147,6 +147,6 @@ grep -rn '#[0-9a-fA-F]\{3,8\}\b' src/ --include="*.tsx" | wc -l
 
 ## V2 Source of Truth
 
-- Token definitions: `ui_kits/extension/v2/tokens.css`
-- Wireframes: `ui_kits/extension/v2/*.jsx`
+- Token definitions: `src/ui-system/theme/global.css`
+- Wireframes: `src/ui-system/components/primitives/`
 - Global CSS: `src/ui-system/theme/global.css`

@@ -425,7 +425,7 @@ grep -rn 'h-7\|h-8\|h-9\|h-10\b' src/ --include="*.tsx"
 
 If any of these apply, STOP and define the spec first:
 
-1. **New primitive component** — run `/ui-preflight` workflow; reference wireframe JSX in `ui_kits/extension/v2/`
+1. **New primitive component** — run `/ui-preflight` workflow; reference wireframe JSX in `src/ui-system/theme/global.css` + `src/ui-system/components/primitives/`
 2. **New view** — define: what context (popup/web/both), what props, what callbacks
 3. **Custom overlay/modal** — justify why `<Dialog>` primitive cannot be used
 4. **Any `rgba()` or `#hex`** — must reference a V2 var, never raw value

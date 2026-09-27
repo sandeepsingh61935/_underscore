@@ -10,13 +10,13 @@ Use this workflow when building any new UI component, view, or page in the _unde
 
 V2 Editorial is a pure CSS custom properties system. No Tailwind utilities. No MD3 tokens. No Ink & Glass.
 
-The **wireframe JSX** in `ui_kits/extension/v2/` is the implementation spec — match it exactly.
+The **wireframe JSX** in `src/ui-system/theme/global.css` + `src/ui-system/components/primitives/` is the implementation spec — match it exactly.
 
 ---
 
 ## Step 1: Read the Wireframe
 
-Before writing any code, open the relevant wireframe in `ui_kits/extension/v2/`:
+Before writing any code, open the relevant wireframe in `src/ui-system/theme/global.css` + `src/ui-system/components/primitives/`:
 
 | File | Contains |
 |------|----------|

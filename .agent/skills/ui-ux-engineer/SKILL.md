@@ -20,7 +20,7 @@ description: Complete guidelines for building and modifying UI in the _underscor
 4. **Never use `box-shadow`.** V2 uses borders: `border: 1px solid var(--rule-soft)`.
 5. **Never use `opacity-*` for hover states.** Use CSS `:hover` pseudo-class.
 6. **Never use explicit `font-weight` declarations.** V2 type vars handle weight.
-7. **Never create a new CSS variable.** Use existing V2 vars from `ui_kits/extension/v2/tokens.css`.
+7. **Never create a new CSS variable.** Use existing V2 vars from `src/ui-system/theme/global.css`.
 8. **Never bypass the barrel export.** Import primitives from `@/ui-system/components/primitives`, never the direct file.
 
 ---
@@ -323,8 +323,8 @@ Instead, verify components with: `npm run build && npm run type-check`
 
 When there is a conflict or specification gap:
 
-1. **`ui_kits/extension/v2/tokens.css`** — Highest authority (V2 token definitions)
-2. **`ui_kits/extension/v2/*.jsx`** — Wireframe visual spec
+1. **`src/ui-system/theme/global.css`** — Highest authority (V2 token definitions)
+2. **`src/ui-system/components/primitives/`** — Wireframe visual spec
 3. **`src/ui-system/theme/global.css`** — Implemented token values
 4. **`.agent/workflows/v2-tokens-reference.md`** — Token lookup guide
 
