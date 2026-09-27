@@ -19,7 +19,6 @@
  *            Use in CI to catch mirror drift.
  */
 
-import { execFileSync } from 'node:child_process';
 import {
   mkdtempSync,
   mkdirSync,
@@ -168,6 +167,9 @@ const EXTRA_DECLARED = ['--paper', '--paper-2', '--paper-3', '--ink', '--ink-2',
 
 function componentsManifest() {
   const declared = [...new Set([...GROUPS.flatMap((g) => g[5]), ...EXTRA_DECLARED])].sort();
+  const selectors = [...new Set(GROUPS.flatMap((g) => g[3]))].sort();
+  const classes = [...new Set(GROUPS.flatMap((g) => g[4]))].sort();
+  const elements = ['button', 'div', 'h1', 'h2', 'h3', 'input', 'p', 'span', 'nav', 'header', 'select', 'section'];
   return {
     schemaVersion: 1,
     brandId: SYSTEM_ID,
@@ -176,14 +178,14 @@ function componentsManifest() {
       title: 'Underscore Editorial - reference components',
       description: 'Static export of _underscore primitives (btn, chip, card, input, seg, switch, plan-pill, mode-pill, tabbar, alert, menu) on Editorial tokens.',
       styleBlockCount: 1,
-      selectorCount: 60,
-      classCount: 40,
-      elementCount: 12,
+      selectorCount: selectors.length,
+      classCount: classes.length,
+      elementCount: elements.length,
     },
     tokens: { declared, referenced: declared, unusedDeclared: [], undeclaredReferenced: [] },
-    selectors: [...new Set(GROUPS.flatMap((g) => g[3]))].sort(),
-    classes: [...new Set(GROUPS.flatMap((g) => g[4]))].sort(),
-    elements: ['button', 'div', 'h1', 'h2', 'h3', 'input', 'p', 'span', 'nav', 'header', 'select', 'section'],
+    selectors,
+    classes,
+    elements,
     groups: GROUPS.map((g) => ({
       id: g[0], label: g[1], present: true, selectors: g[3],
       classes: g[4], elements: g[5], tokenReferences: g[6],
@@ -217,20 +219,82 @@ function manifest() {
   };
 }
 
+function stripComments(css) {
+  // String-aware: skip single/double-quoted strings so content:"/*" survives.
+  let out = '';
+  let i = 0;
+  while (i < css.length) {
+    const ch = css[i];
+    if (ch === '"' || ch === "'") {
+      const end = css.indexOf(ch, i + 1);
+      out += css.slice(i, end === -1 ? css.length : end + 1);
+      i = end === -1 ? css.length : end + 1;
+    } else if (ch === '/' && css[i + 1] === '*') {
+      const end = css.indexOf('*/', i + 2);
+      i = end === -1 ? css.length : end + 2;
+    } else {
+      out += ch;
+      i++;
+    }
+  }
+  return out;
+}
+
+function fragmentKept(fragment) {
+  const s = fragment.trim();
+  if (CSS_PREFIXES.some((p) => s.startsWith(p))) return true;
+  // Element-qualified: button.hl-icon, input.foo[bar], a.baz:hover
+  const m = /^[a-zA-Z][\w-]*([.#\[:].*)$/.exec(s);
+  if (m && CSS_PREFIXES.some((p) => m[1].startsWith(p))) return true;
+  return false;
+}
+
+function selectorKept(selector) {
+  // Split compound selectors on commas then combinators so descendant/child
+  // parts match (e.g. `button.hl-icon svg`, `.seg button.active`).
+  const fragments = selector.split(',').flatMap((part) => part.split(/[\s>+~]+/));
+  if (fragments.some(fragmentKept)) return true;
+  // Dark-mode overrides and reduced-motion guards belong to the kit.
+  const s = selector.trim();
+  if (/^\.dark(?:[\s.:#\[]|$)/.test(s)) return true;
+  if (s.startsWith('@media')) return true;
+  return false;
+}
+
 function componentCss(fullCss) {
-  // Strip :root and .dark (they ship verbatim in tokens.css), keep the rest.
-  let body = fullCss
+  // Strip :root and .dark token blocks (they ship verbatim in tokens.css).
+  const body = stripComments(fullCss)
     .replace(/:root \{.*?\n\}\n?/s, '')
     .replace(/\.dark \{.*?\n\}\n?/s, '');
-  const rules = body.match(/^[^{]+\{.*?\n\}/gms) ?? [];
-  return rules
-    .filter((r) => {
-      const sel = r.split('{', 1)[0];
-      return sel.split(',').some((s) =>
-        CSS_PREFIXES.some((p) => s.trim().startsWith(p)),
-      );
-    })
-    .join('\n');
+  // Tokenize in source order: @media / @keyframes blocks (one nesting
+  // level) or flat rules. Comment-stripping above guarantees selectors
+  // never start with /* */.
+  const rules =
+    body.match(
+      /@media[^{]+\{(?:[^{}]|\{[^{}]*\})*\}|@keyframes[^{]+\{(?:[^{}]|\{[^{}]*\})*\}|[^{}]+\{[^{}]*\}/g,
+    ) ?? [];
+  const kept = [];
+  for (const r of rules) {
+    if (r.startsWith('@media')) {
+      // Keep the whole block when any inner rule belongs to the kit:
+      // media queries are conditional, partial extraction would corrupt
+      // guards like prefers-reduced-motion.
+      const inner = r.slice(r.indexOf('{') + 1, r.lastIndexOf('}'));
+      const innerRules = inner.match(/[^{}]+\{[^{}]*\}/g) ?? [];
+      if (
+        innerRules.some((ir) => selectorKept(ir.split('{', 1)[0]))
+      ) {
+        kept.push(r);
+      }
+      continue;
+    }
+    if (r.startsWith('@keyframes')) {
+      kept.push(r);
+      continue;
+    }
+    if (selectorKept(r.split('{', 1)[0])) kept.push(r);
+  }
+  return kept.join('\n');
 }
 
 function componentsHtml(tokensCss, compCss) {
@@ -249,15 +313,24 @@ ${tokensCss}
 .od-demo h2 { font-family: var(--mono); font-size: var(--step--2); text-transform: uppercase;
   letter-spacing: 0.14em; color: var(--ink-3); border-bottom: 1px solid var(--rule-soft); padding-bottom: 8px; }
 .od-demo .row-demo { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.od-demo .kit-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
+.font-note { font-size: var(--step--1); color: var(--ink-3); max-width: 60ch; }
 
 /* Component CSS mirrored from _underscore src/ui-system/theme/global.css */
 ${compCss}
 </style>
+<script>
+function toggleKitDark() {
+  document.querySelector('.od-demo').classList.toggle('dark');
+}
+</script>
 </head>
 <body>
 <main class="od-demo">
+<div class="kit-toolbar"><button class="btn sm" onclick="toggleKitDark()">Toggle dark</button></div>
 <h1 class="u-serif" style="font-size: var(--step-4)">Underscore Editorial</h1>
 <p>Static export of _underscore primitives. Tokens: <code>tokens.css</code>. Source of truth: <code>_underscore/src/ui-system/theme/global.css</code>.</p>
+<p class="font-note">Type note: <code>--serif</code> starts with licensed GT Alpina and <code>--sans</code> with Söhne — neither ships as a webfont in this kit, so this page renders Georgia/system fallbacks. Spacing/scale still match the codebase.</p>
 
 <section><h2>Buttons</h2><div class="row-demo">
 <button class="btn">Default</button>
@@ -266,6 +339,7 @@ ${compCss}
 <button class="btn ghost">Ghost</button>
 <button class="btn danger">Danger</button>
 <button class="btn sm">Small</button>
+<button class="btn" disabled><span class="u-mono" style="font-size: 12px">Loading...</span></button>
 <button class="btn-text">Action</button>
 <button class="icon-btn" aria-label="icon">+</button>
 </div></section>
@@ -278,8 +352,9 @@ ${compCss}
 </section>
 
 <section><h2>Chips / pills / status</h2><div class="row-demo">
-<button class="chip chip-filter">Filter</button>
-<button class="chip chip-filter is-selected">Selected</button>
+<button class="chip chip-filter" aria-pressed="false">Filter</button>
+<button class="chip chip-filter is-selected" aria-pressed="true">Selected</button>
+<div class="chip-input-wrap"><button class="chip-input-main">Apple</button><button class="chip-remove" aria-label="Remove">×</button></div>
 <span class="pill-shell"><button class="pill pill-standalone">A</button><button class="pill pill-active">B</button></span>
 <span class="plan-pill"><span class="plan-dot"></span>Free</span>
 <span class="plan-pill is-paid"><span class="plan-dot"></span>Paid</span>
@@ -289,24 +364,26 @@ ${compCss}
 
 <section><h2>Card / collection / highlight</h2>
 <div class="card"><h3 class="u-serif" style="font-size: var(--step-2)">Card title</h3><p>Card body on paper-2.</p></div>
+<button class="card-interactive">Interactive card</button>
 <div class="collection-card"><div class="cc-favicon">G</div><div class="cc-body"><div class="cc-title-row"><h3 class="cc-title">github.com</h3><span class="cc-tag">Code</span></div><p class="cc-meta">5 highlights</p></div><div class="cc-arrow">→</div></div>
-<div class="hl-card"><p class="hl-text">"Highlight text on paper."</p><div class="hl-meta"><span>Today</span></div></div>
+<div class="hl-card"><p class="hl-text">"Highlight text on paper."</p><div class="hl-meta"><span>Today</span><span>•</span><button class="hl-link">example.com/path</button></div><div class="hl-actions"><button class="icon-btn" aria-label="Copy">⧉</button><button class="icon-btn is-active" aria-label="Copied">✓</button><button class="icon-btn" aria-label="Delete highlight">×</button></div></div>
 <button class="mode-card is-active"><span class="mode-card-head"><span class="mode-card-id"><span class="mode-card-icon">H</span><span class="mode-card-label">Starter</span></span></span><span class="mode-card-desc">Active mode card.</span></button>
 </section>
 
 <section><h2>Inputs</h2>
 <input class="input" placeholder="Email">
 <div class="search-wrap"><input class="search-input" placeholder="Search collections..."></div>
-<div class="seg-control"><button class="seg-option">Light</button><button class="seg-option is-active">Dark</button></div>
+<div class="seg-control"><button class="seg-option">Light</button><button class="seg-option is-active" aria-pressed="true"><span class="seg-option-indicator"></span><span class="seg-option-label">Dark</span></button></div>
 <button class="switch is-on" role="switch" aria-checked="true"><span class="switch-track"><span class="switch-knob"></span></span></button>
 </section>
 
 <section><h2>Tab bar / headers</h2>
-<nav class="tabbar"><button class="active">Home</button><button>Library</button><button>Settings</button></nav>
+<nav class="tabbar" aria-label="Primary"><button class="active" aria-current="page">Home</button><button>Library</button><button>Settings</button></nav>
 <div class="mode-header"><button class="mode-header-back">← Back</button></div>
 </section>
 
 <section><h2>Alert / menu</h2>
+<div class="alert-overlay"></div>
 <div class="alert-content"><h3 class="u-serif" style="font-size: var(--step-3)">Delete?</h3><p>Permanent action.</p><div class="alert-footer"><button class="alert-cancel">Cancel</button><button class="alert-action">Delete</button></div></div>
 </section>
 </main>
@@ -452,7 +529,9 @@ function exportAll(outDir) {
 }
 
 function normalizeForDiff(text) {
-  return text.replace(/"generatedAt": "[^"]*"/, '"generatedAt": "X"');
+  return text
+    .replace(/"generatedAt": "[^"]*"/g, '"generatedAt": "X"')
+    .replace(/\r\n/g, '\n');
 }
 
 function main() {
@@ -466,17 +545,28 @@ function main() {
     const tmp = mkdtempSync(join(tmpdir(), 'od-export-'));
     try {
       exportAll(tmp);
-      const diffs = [];
-      const walk = (dir) => {
+      const fresh = new Set();
+      const walk = (base, dir, into) => {
         for (const name of readdirSync(dir, { withFileTypes: true })) {
           const p = join(dir, name.name);
-          if (name.isDirectory()) walk(p);
-          else diffs.push(p.slice(tmp.length + 1));
+          if (name.isDirectory()) walk(base, p, into);
+          else into.add(p.slice(base.length + 1));
         }
       };
-      walk(tmp);
+      walk(tmp, tmp, fresh);
+      const committed = new Set();
+      try {
+        walk(outDir, outDir, committed);
+      } catch {
+        // Missing package dir: every fresh file counts as drift below.
+      }
       let dirty = false;
-      for (const rel of diffs) {
+      for (const rel of new Set([...fresh, ...committed])) {
+        if (!fresh.has(rel)) {
+          dirty = true;
+          console.error(`orphan: ${rel} (in package, not generated)`);
+          continue;
+        }
         const a = normalizeForDiff(readFileSync(join(tmp, rel), 'utf8'));
         let b = null;
         try {
@@ -493,7 +583,7 @@ function main() {
         console.error('OD mirror is stale — run node scripts/export-od-system.mjs');
         process.exit(1);
       }
-      console.log(`OD mirror is current (${diffs.length} files, ${SYSTEM_ID}).`);
+      console.log(`OD mirror is current (${fresh.size} files, ${SYSTEM_ID}).`);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -504,4 +594,26 @@ function main() {
   console.log(`Exported ${SYSTEM_ID} (${tokenCount} tokens, ${files.length} files) → ${outDir}`);
 }
 
-main();
+const invokedAsMain =
+  typeof process.argv[1] === 'string' &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invokedAsMain) {
+  main();
+}
+
+export {
+  CSS_PREFIXES,
+  GROUPS,
+  buildTokens,
+  componentCss,
+  componentsHtml,
+  componentsManifest,
+  designTokensDoc,
+  exportAll,
+  extractBlock,
+  inferLayer,
+  inferType,
+  manifest,
+  normalizeForDiff,
+  stripComments,
+};
