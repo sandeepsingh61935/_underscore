@@ -60,6 +60,8 @@
     "check:legacy-ds:src": "bash scripts/check-legacy-ds.sh --soft src/",
     "check:legacy-ds:strict": "bash scripts/check-legacy-ds.sh --strict src/",
     "check:legacy-ds:test": "vitest run tests/unit/harness/check-legacy-ds.test.ts",
+    "od:export": "node scripts/export-od-system.mjs",
+    "od:check": "node scripts/export-od-system.mjs --check",
     "quality": "bun run type-check && bun run lint && bun run format:check && bun run test && bun run check:legacy-ds:src",
     "quality:full": "bun run type-check && bun run lint && bun run format:check && bun run test:coverage:check && bun run check:legacy-ds:src",
     "postinstall": "wxt prepare",
