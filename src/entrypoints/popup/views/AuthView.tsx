@@ -10,6 +10,7 @@ import { VerificationView } from './VerificationView';
 
 import { isAuthEmailUiEnabled } from '@/shared/auth/auth-email-ui';
 import { EXISTING_ACCOUNT_CODE, mapAuthError } from '@/shared/auth/auth-error-messages';
+import { ensureSupabaseOrigin } from '@/shared/permissions/ensure-origins';
 import { Button } from '@/ui-system/components/primitives/Button';
 import { Input } from '@/ui-system/components/primitives/Input';
 import { Logo } from '@/ui-system/components/primitives/Logo';
@@ -77,6 +78,19 @@ export function AuthView({ onLoginSuccess, onBack }: AuthViewProps): React.React
   const handleProviderClick = async (provider: OAuthProviderType): Promise<void> => {
     setLoginError(null);
     setActiveProvider(provider);
+    // Request the optional Supabase host here — this click is a user
+    // gesture, so Chrome shows the permission prompt. The same request
+    // from the background service worker has no gesture and is
+    // auto-denied, which surfaces as "Permission ... was denied".
+    // (Background keeps its own gate as fallback.)
+    const granted = await ensureSupabaseOrigin();
+    if (!granted) {
+      setActiveProvider(null);
+      setLoginError(
+        'Permission to access the account service was denied. Please grant access and try again.'
+      );
+      return;
+    }
     const result = await login(provider);
     setActiveProvider(null);
     if (result.success) {

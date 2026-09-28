@@ -29,7 +29,7 @@ import {
   INTERNAL_RATE_LIMIT_CODE,
   EXISTING_ACCOUNT_CODE,
 } from '@/shared/auth/auth-error-messages';
-import { ORIGIN_SUPABASE } from '@/shared/permissions/ensure-origins';
+import { ORIGIN_SUPABASE, ensureSupabaseOrigin } from '@/shared/permissions/ensure-origins';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 import { RateLimiter } from '@/shared/utils/rate-limiter';
@@ -131,31 +131,48 @@ export class AuthManager implements IAuthManager {
         return;
       }
 
-      // Listen for Supabase auth state changes
-      this.supabase.auth.onAuthStateChange((event, session) => {
-        // Automatic refreshes are routine volume — local debug only, never
-        // forwarded to the server sink (failures surface via refreshToken()).
-        if (event === 'TOKEN_REFRESHED') {
-          this.logger.debug('Supabase token refreshed', {
-            userId: session?.user?.id,
-          });
-        }
-        this.handleSupabaseAuthStateChange(session);
-      });
-
-      // Initial check
-      const {
-        data: { session },
-      } = await this.supabase.auth.getSession();
-      if (session) {
-        this.handleSupabaseAuthStateChange(session);
-      } else {
-        this.logger.debug('No active session found on init');
-        await this.restoreVerificationState();
-      }
+      // Listen for Supabase auth state changes (idempotent so a
+      // post-grant re-entry never double-subscribes).
+      await this.ensureAccountListener();
     })();
 
     return this.initializationPromise;
+  }
+
+  /**
+   * Register the Supabase auth listener + hydrate any persisted session.
+   * Idempotent: safe to call from initialize() and again after the user
+   * grants the optional Supabase host at sign-in time (prod builds start
+   * as guest with no listener until then).
+   */
+  private accountListenerRegistered = false;
+
+  private async ensureAccountListener(): Promise<void> {
+    if (this.accountListenerRegistered) return;
+    this.accountListenerRegistered = true;
+
+    // Listen for Supabase auth state changes
+    this.supabase.auth.onAuthStateChange((event, session) => {
+      // Automatic refreshes are routine volume — local debug only, never
+      // forwarded to the server sink (failures surface via refreshToken()).
+      if (event === 'TOKEN_REFRESHED') {
+        this.logger.debug('Supabase token refreshed', {
+          userId: session?.user?.id,
+        });
+      }
+      this.handleSupabaseAuthStateChange(session);
+    });
+
+    // Initial check
+    const {
+      data: { session },
+    } = await this.supabase.auth.getSession();
+    if (session) {
+      this.handleSupabaseAuthStateChange(session);
+    } else {
+      this.logger.debug('No active session found on init');
+      await this.restoreVerificationState();
+    }
   }
 
   /**
@@ -221,6 +238,26 @@ export class AuthManager implements IAuthManager {
       if (provider !== 'google') {
         throw new Error(`Native OAuth flow not implemented for provider: ${provider}`);
       }
+
+      // Guest-first: Supabase host is optional until sign-in. The popup
+      // requests it from the click gesture; this is the fallback for
+      // IPC paths that bypass the popup. Deny with a grant-access error
+      // instead of attempting blocked network calls.
+      // Afterwards ensure the auth listener exists (SW may have started
+      // as guest with no listener) so the session hydrates and the next
+      // popup open reconciles to logged-in via cache/GET_AUTH_STATE.
+      const granted = await ensureSupabaseOrigin();
+      if (!granted) {
+        this.logger.warn(
+          'Supabase origin not granted at sign-in (request denied or failed) — aborting OAuth before network',
+          { provider }
+        );
+        throw new AuthenticationError(
+          mapAuthError('oauth', { code: 'permission_denied' }),
+          { provider, error: 'permission_denied' }
+        );
+      }
+      await this.ensureAccountListener();
 
       this.logger.debug('Initiating Supabase OAuth flow', { provider, redirectUrl });
 
