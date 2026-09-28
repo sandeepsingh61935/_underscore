@@ -29,7 +29,7 @@ import {
   INTERNAL_RATE_LIMIT_CODE,
   EXISTING_ACCOUNT_CODE,
 } from '@/shared/auth/auth-error-messages';
-import { ORIGIN_SUPABASE, ensureSupabaseOrigin } from '@/shared/permissions/ensure-origins';
+import { ORIGIN_SUPABASE } from '@/shared/permissions/ensure-origins';
 import type { EventBus } from '@/shared/utils/event-bus';
 import type { ILogger } from '@/shared/utils/logger';
 import { RateLimiter } from '@/shared/utils/rate-limiter';
@@ -212,6 +212,14 @@ export class AuthManager implements IAuthManager {
       throw new InvalidProviderError(provider);
     }
 
+    // A persisted session is already proof of authentication — return it
+    // instead of forcing another Google window. initialize() hydrates it
+    // above (same storage backs every install of this extension ID).
+    if (this.isAuthenticated && this.currentUser) {
+      this.logger.info('Sign in skipped — existing session', { provider });
+      return { success: true, user: this.currentUser };
+    }
+
     if (!(await this.authRateLimiter.tryAcquire())) {
       return this.rateLimitResult(this.authRateLimiter);
     }
@@ -239,24 +247,11 @@ export class AuthManager implements IAuthManager {
         throw new Error(`Native OAuth flow not implemented for provider: ${provider}`);
       }
 
-      // Guest-first: Supabase host is optional until sign-in. The popup
-      // requests it from the click gesture; this is the fallback for
-      // IPC paths that bypass the popup. Deny with a grant-access error
-      // instead of attempting blocked network calls.
-      // Afterwards ensure the auth listener exists (SW may have started
-      // as guest with no listener) so the session hydrates and the next
-      // popup open reconciles to logged-in via cache/GET_AUTH_STATE.
-      const granted = await ensureSupabaseOrigin();
-      if (!granted) {
-        this.logger.warn(
-          'Supabase origin not granted at sign-in (request denied or failed) — aborting OAuth before network',
-          { provider }
-        );
-        throw new AuthenticationError(
-          mapAuthError('oauth', { code: 'permission_denied' }),
-          { provider, error: 'permission_denied' }
-        );
-      }
+      // Account host is a required install-time permission, so it is
+      // always reachable here — no runtime grant prompt. Ensure the auth
+      // listener exists (a pre-fix SW may have started as guest with no
+      // listener) so the session hydrates and the next popup open
+      // reconciles to logged-in via cache/GET_AUTH_STATE.
       await this.ensureAccountListener();
 
       this.logger.debug('Initiating Supabase OAuth flow', { provider, redirectUrl });

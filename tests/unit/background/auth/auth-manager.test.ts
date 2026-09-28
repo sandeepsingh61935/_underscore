@@ -553,4 +553,29 @@ describe('AuthManager Unit Tests', () => {
       })
     );
   });
+
+  /**
+   * Test 13: existing persisted session short-circuits Google sign-in —
+   * no second OAuth window when already authenticated.
+   */
+  it('should return the existing session without opening the Google window', async () => {
+    mockSupabase.auth.getSession = vi.fn().mockResolvedValue({
+      data: { session: mockSession },
+      error: null,
+    });
+    const launchSpy = vi.mocked(chrome.identity.launchWebAuthFlow).mockReset();
+    const mgr = new AuthManager(
+      mockSupabase as unknown as SupabaseClient,
+      new EventBus(),
+      mockLogger
+    );
+    await mgr.initialize();
+
+    const result = await mgr.signIn(OAuthProvider.GOOGLE);
+
+    expect(result.success).toBe(true);
+    expect(mgr.currentUser?.email).toBe('user@example.com');
+    expect(launchSpy).not.toHaveBeenCalled();
+    expect(mockSupabase.auth.signInWithOAuth).not.toHaveBeenCalled();
+  });
 });

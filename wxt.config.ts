@@ -8,16 +8,16 @@ import react from '@vitejs/plugin-react';
 const FIREFOX_EXTENSION_ID = 'underscore-highlighter@underscore';
 
 /**
- * Host access is optional and requested at use-time.
+ * Host access is optional and requested at use-time — except the account
+ * host (Supabase), which is required at install. Sign-in must never prompt
+ * for a runtime host permission: the Google OAuth window alone authorizes
+ * the app, and a persisted session must survive popup close/reopen with no
+ * extra grants.
  * Firefox/AMO always display the literal host string — we cannot rename it.
  * Prefer a first-party API host later (Supabase custom domain or proxy) so the
- * UI does not show the raw project ref. Until then: request only on sign-in / AI.
- *
- * No required host_permissions — guest highlight works with content_scripts only.
+ * UI does not show the raw project ref.
  */
 const OPTIONAL_HOST_PERMISSIONS = [
-  // Account / sync — prompted on sign-in (see ensureSupabaseOrigin)
-  'https://cuzwaukxagefyvtxbqmi.supabase.co/*',
   // BYOK providers — prompted when connecting that provider
   'https://generativelanguage.googleapis.com/*',
   'https://api.anthropic.com/*',
@@ -44,6 +44,10 @@ export default defineConfig({
       description:
         'Highlight the web. Save passages to a library you can search, export, and sync.',
       permissions: ['activeTab', 'storage', 'alarms', 'identity'] as string[],
+      // Account host is required: auth, sync, and session hydration must work
+      // with no runtime permission prompt (Google OAuth window is the only
+      // user authorization). Everything else stays optional (BYOK/AI).
+      host_permissions: ['https://cuzwaukxagefyvtxbqmi.supabase.co/*'],
       optional_host_permissions: [...OPTIONAL_HOST_PERMISSIONS],
     };
 
