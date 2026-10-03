@@ -95,6 +95,7 @@ import {
   SEARCH_HIGHLIGHTS,
 } from '@/shared/schemas/message-schemas';
 import { mergeHighlightMetadataPatch } from '@/shared/utils/highlight-metadata';
+import type { RefineFilter } from '@/shared/utils/highlight-filter';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { LoggerFactory } from '@/shared/utils/logger';
@@ -778,6 +779,8 @@ export default defineBackground({
           domain?: string;
           section?: string;
           fields?: SearchField[];
+          refine?: RefineFilter[];
+          tagFilters?: string[];
         }) => {
           logger.info('Handling SEARCH_HIGHLIGHTS request', {
             domain: payload.domain,
@@ -788,6 +791,8 @@ export default defineBackground({
               domain: payload.domain,
               section: payload.section,
               fields: payload.fields,
+              refine: payload.refine,
+              tagFilters: payload.tagFilters,
             });
             const withPlaintext =
               await backgroundHighlightOrchestrator.enrichWithPlaintext(highlights);
