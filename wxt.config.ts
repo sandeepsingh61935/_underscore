@@ -44,6 +44,7 @@ export default defineConfig({
       description:
         'Highlight the web. Save passages to a library you can search, export, and sync.',
       permissions: ['activeTab', 'storage', 'alarms', 'identity'] as string[],
+      optional_permissions: ['tabs', 'tabGroups'] as string[],
       optional_host_permissions: [...OPTIONAL_HOST_PERMISSIONS],
     };
 
@@ -59,7 +60,11 @@ export default defineConfig({
             // Account/auth types are optional until the user signs in.
             data_collection_permissions: {
               required: ['websiteContent', 'websiteActivity'],
-              optional: ['personallyIdentifyingInfo', 'authenticationInfo'],
+              optional: [
+                'personallyIdentifyingInfo',
+                'authenticationInfo',
+                'browsingActivity',
+              ],
             },
           },
           // Silence AMO warning when Android min lags desktop data-consent support.
