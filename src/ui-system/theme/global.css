@@ -1415,6 +1415,56 @@ button.hl-icon.is-danger:active {
   color: var(--ttl-expired);
 }
 
+.hl-tag-autocomplete {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 144px;
+  overflow-y: auto;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius);
+  background: var(--paper-2);
+  display: flex;
+  flex-direction: column;
+}
+
+.hl-tag-autocomplete-item {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  width: 100%;
+  border-bottom: 1px solid var(--rule-soft);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-2);
+  text-align: left;
+}
+
+.hl-tag-autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.hl-tag-autocomplete-item:hover,
+.hl-tag-autocomplete-item.selected {
+  background: var(--accent-tint-08);
+  color: var(--ink);
+}
+
+.hl-tag-autocomplete-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Settings segmented control (Open Design .seg — Mode / Theme) */
 .seg {
   display: grid;
@@ -1823,6 +1873,21 @@ button.hl-icon.is-danger:active {
   flex-direction: column;
   gap: 12px;
   flex-shrink: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-soft) transparent;
+}
+.filter-panel::-webkit-scrollbar {
+  width: 4px;
+}
+.filter-panel::-webkit-scrollbar-thumb {
+  background: var(--rule-soft);
+  border-radius: 2px;
+}
+.filter-panel::-webkit-scrollbar-track {
+  background: transparent;
 }
 .filter-sec {
   display: flex;
@@ -2286,6 +2351,16 @@ button.sr-icon.is-delete:hover,
 button.sr-icon.is-delete:active {
   color: var(--ttl-expired);
   background: color-mix(in oklch, var(--ttl-expired) 8%, var(--paper));
+}
+
+.export-menu-item:hover {
+  background: var(--paper-2);
+  color: var(--ink) !important;
+}
+
+.export-menu-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
 }
 
 /* ─── A11y: focus-visible (story 75) ───

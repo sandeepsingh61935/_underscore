@@ -413,4 +413,75 @@ describe('HighlightCard (V2 wireframe contract)', () => {
       expect(onSaveTags).toHaveBeenCalledWith(['tech']);
     });
   });
+
+  it('displays matching tag suggestions when typing and adds tag on suggestion click', async () => {
+    const onSaveTags = vi.fn().mockResolvedValue(true);
+    render(
+      <HighlightCard
+        quote="Test quote"
+        domain="example.com"
+        tags={['existing']}
+        tagSuggestions={['science', 'scifi', 'social', 'existing', 'technology']}
+        onSaveTags={onSaveTags}
+      />
+    );
+
+    const tagBtn = screen.getByRole('button', { name: /Add tags/i });
+    fireEvent.click(tagBtn);
+
+    const input = screen.getByPlaceholderText(/Add tag…/i);
+    // Type 'sci'
+    fireEvent.change(input, { target: { value: 'sci' } });
+
+    // Suggestions matching 'sci' should be shown, excluding 'existing'
+    expect(screen.getByRole('listbox', { name: /Suggested tags/i })).toBeTruthy();
+    expect(screen.getByText('#science')).toBeTruthy();
+    expect(screen.getByText('#scifi')).toBeTruthy();
+    expect(screen.queryByText('#social')).toBeNull();
+    expect(screen.queryByText('#existing')).toBeNull();
+
+    // Click on #science suggestion
+    const scienceOpt = screen.getByText('#science');
+    fireEvent.mouseDown(scienceOpt);
+
+    await vi.waitFor(() => {
+      expect(onSaveTags).toHaveBeenCalledWith(['existing', 'science']);
+    });
+  });
+
+  it('supports keyboard navigation (ArrowDown, ArrowUp, Enter) on tag suggestions', async () => {
+    const onSaveTags = vi.fn().mockResolvedValue(true);
+    render(
+      <HighlightCard
+        quote="Test quote"
+        domain="example.com"
+        tags={[]}
+        tagSuggestions={['alpha', 'alpine', 'beta']}
+        onSaveTags={onSaveTags}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Add tags/i }));
+    const input = screen.getByPlaceholderText(/Add tag…/i);
+
+    // Type 'al'
+    fireEvent.change(input, { target: { value: 'al' } });
+
+    // Arrow down to highlight first suggestion ('alpha')
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    const alphaOpt = screen.getByRole('option', { name: /#alpha/i });
+    expect(alphaOpt).toHaveAttribute('aria-selected', 'true');
+
+    // Arrow down again to highlight second suggestion ('alpine')
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    const alpineOpt = screen.getByRole('option', { name: /#alpine/i });
+    expect(alpineOpt).toHaveAttribute('aria-selected', 'true');
+
+    // Press Enter to select highlighted suggestion ('alpine')
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await vi.waitFor(() => {
+      expect(onSaveTags).toHaveBeenCalledWith(['alpine']);
+    });
+  });
 });
