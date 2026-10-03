@@ -9,7 +9,7 @@
 
 ## Purpose
 
-`src/background/api/supabase-client.ts` issues queries against three tables — `highlights`, `sync_events`, `collections` — and applies `user_id` filters in the query builder. Those filters are **defense in depth**, not the primary authorization control. The primary control is Row Level Security (RLS) on the Supabase Postgres tables.
+`src/background/api/supabase-client.ts` issues queries against two tables — `highlights`, `sync_events` — and applies `user_id` filters in the query builder. Those filters are **defense in depth**, not the primary authorization control. The primary control is Row Level Security (RLS) on the Supabase Postgres tables.
 
 If RLS is disabled on any of these tables, an authenticated user can read or write any other user's data by simply omitting the `user_id` filter (or supplying another user's id).
 
@@ -138,58 +138,6 @@ Notes:
 
 ---
 
-## `collections`
-
-**Application access pattern** (`src/background/api/supabase-client.ts`):
-
-| Method | Verbs | Filters |
-| --- | --- | --- |
-| `createCollection` | INSERT | `user_id`, `name`, `description`, `created_at`, `updated_at` |
-| `getCollections` | SELECT | `user_id = ?`, joined with `highlights(count)` |
-
-### Required schema setup
-
-```sql
-ALTER TABLE public.collections ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.collections FORCE ROW LEVEL SECURITY;
-```
-
-### Required policies
-
-```sql
-CREATE POLICY collections_select_own
-  ON public.collections
-  FOR SELECT
-  TO authenticated
-  USING (user_id = auth.uid());
-
-CREATE POLICY collections_insert_own
-  ON public.collections
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (user_id = auth.uid());
-
-CREATE POLICY collections_update_own
-  ON public.collections
-  FOR UPDATE
-  TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
-
-CREATE POLICY collections_delete_own
-  ON public.collections
-  FOR DELETE
-  TO authenticated
-  USING (user_id = auth.uid());
-```
-
-Notes:
-
-- Collections are currently read + create only in the application. `UPDATE` and `DELETE` policies are listed for parity and to keep the table consistent if a future feature edits collections. Both `USING` and `WITH CHECK` are required for `UPDATE` so a row cannot be re-assigned to a different user.
-- `getCollections` performs a join onto `highlights(count)`. The RLS policy on `highlights` automatically restricts the joined count to the caller's own highlights, so a user cannot infer the highlight count of another user's collections by joining around the policy.
-
----
-
 ## Service-role bypass
 
 The `service_role` Postgres role bypasses RLS by default. It is used from trusted server contexts only:
@@ -207,7 +155,7 @@ This means an attacker who controls the anon key cannot escalate to service-role
 
 `SupabaseClient` calls a private `verifyRls()` method during construction. The method queries `pg_policies` (or, if the catalog view is not exposed by PostgREST, falls back to a no-op with a `logger.warn`) and asserts:
 
-1. RLS is enabled (`rowsecurity = true`) for `highlights`, `sync_events`, `collections`.
+1. RLS is enabled (`rowsecurity = true`) for `highlights`, `sync_events`.
 2. The required policies listed above exist with the correct command and role.
 
 If either check fails, the tripwire logs a `logger.warn` with the table name and the gap. **It does not throw** — the application continues to start. This is intentional: a misconfigured RLS is a serious security regression, but it is not a reason to brick the user's local install. The warning surfaces in the console for operators, and the application keeps functioning with the defense-in-depth `user_id` filters in the client.
