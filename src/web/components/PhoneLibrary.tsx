@@ -7,7 +7,10 @@ import { formatHighlightWhen } from '@/shared/utils/format-highlight-when';
 import { displaySectionPath } from '@/shared/utils/page-href';
 import { HighlightSearchBar } from '@/features/collections/components/HighlightSearchBar';
 import { LibrarySortControl } from '@/features/collections/components/LibrarySortControl';
-import type { AvailableTag } from '@/features/collections/components/HighlightSearchBar';
+import type {
+  AvailableGroup,
+  AvailableTag,
+} from '@/features/collections/components/HighlightSearchBar';
 import type { RefineFilter } from '@/shared/utils/highlight-filter';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { DomainFavicon } from '@/web/components/DomainFavicon';
@@ -42,6 +45,9 @@ export type PhoneLibraryProps = {
     tagFilters: string[];
     onTagFiltersChange: (tags: string[]) => void;
     availableTags: AvailableTag[];
+    availableGroups?: AvailableGroup[];
+    groupFilters?: string[];
+    onGroupFiltersChange?: (groupIds: string[]) => void;
   };
   /** Library has rows before filters. Distinguishes an empty library from no matches. */
   hasLibrary?: boolean;
@@ -77,14 +83,14 @@ type DomainGroup = {
   highlights: WebHighlight[];
 };
 
-type PageGroup = {
+type DomainPageGroup = {
   path: string;
   count: number;
   lastActive: number;
 };
 
-function pagesInDomain(highlights: WebHighlight[], keepOrder = false): PageGroup[] {
-  const map = new Map<string, PageGroup>();
+function pagesInDomain(highlights: WebHighlight[], keepOrder = false): DomainPageGroup[] {
+  const map = new Map<string, DomainPageGroup>();
   for (const h of highlights) {
     const path = h.path || '/';
     const prev = map.get(path);
@@ -183,14 +189,15 @@ export function PhoneLibrary({
     setQuotePage(1);
     setPageListPage(1);
   }, [domain, section, sort]);
-  const groups = useMemo(
+  const domainGroups = useMemo(
     () => groupByDomain(highlights, Boolean(sort)),
     [highlights, sort]
   );
   const filtering =
     query.trim().length > 0 ||
     (filters?.refine.length ?? 0) > 0 ||
-    (filters?.tagFilters.length ?? 0) > 0;
+    (filters?.tagFilters.length ?? 0) > 0 ||
+    (filters?.groupFilters?.length ?? 0) > 0;
   const searchControl = filters ? (
     <HighlightSearchBar
       query={query}
@@ -202,6 +209,9 @@ export function PhoneLibrary({
       tagFilters={filters.tagFilters}
       onTagFiltersChange={filters.onTagFiltersChange}
       availableTags={filters.availableTags}
+      availableGroups={filters.availableGroups}
+      groupFilters={filters.groupFilters}
+      onGroupFiltersChange={filters.onGroupFiltersChange}
       resultCount={filtering ? highlights.length : undefined}
       placeholder="Search highlights…"
     />
@@ -627,7 +637,7 @@ export function PhoneLibrary({
   }
 
   // Domain list mode. With the filter bar, the parent already applied query and filters.
-  const filtered = filters ? groups : filterByQuery(groups, query);
+  const filtered = filters ? domainGroups : filterByQuery(domainGroups, query);
 
   const visibleHighlights = filtered.reduce((sum, g) => sum + g.count, 0);
 

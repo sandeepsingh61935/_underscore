@@ -2,7 +2,7 @@
 
 import type { AccountPillLabel } from '@/shared/utils/account-pill';
 
-export type ActiveTab = 'home' | 'collections' | 'settings';
+export type ActiveTab = 'home' | 'collections' | 'groups' | 'settings';
 export type ViewKey =
   | 'LOADING'
   | 'WELCOME'
@@ -10,6 +10,8 @@ export type ViewKey =
   | 'DOMAIN_DETAILS'
   | 'SUB_DOMAIN'
   | 'HIGHLIGHT'
+  | 'GROUPS'
+  | 'GROUP_DETAIL'
   | 'AUTH'
   | 'SETTINGS'
   | 'DASHBOARD';
@@ -39,8 +41,10 @@ export interface ChromeHandlers {
   onBackToCollections: () => void;
   onBackToDomain: () => void;
   onBackToHighlight: () => void;
+  onBackToGroups: () => void;
   highlightBackLabel: () => string;
   subDomainBackLabel: () => string;
+  groupDetailBackLabel: () => string;
   getModeId: () => string;
   getAccountPill: () => AccountPillLabel | null;
   onAccountPillClick: () => void;
@@ -126,6 +130,32 @@ export function buildChrome(handlers: ChromeHandlers): ChromeMap {
       onTabChange: handlers.onTabChange,
       onBack: handlers.onBackToDomain,
       backLabel: handlers.subDomainBackLabel(),
+      accountPill: null,
+    },
+    GROUPS: {
+      title: `${BRAND} · groups`,
+      place: 'groups',
+      brand: BRAND,
+      showTitleStrip: true,
+      showModeHeader: true,
+      showTabBar: true,
+      modeId: handlers.getModeId(),
+      activeTab: 'groups',
+      onTabChange: handlers.onTabChange,
+      accountPill: null,
+    },
+    GROUP_DETAIL: {
+      title: `${BRAND} · groups`,
+      place: 'groups',
+      brand: BRAND,
+      showTitleStrip: true,
+      showModeHeader: true,
+      showTabBar: true,
+      modeId: handlers.getModeId(),
+      activeTab: 'groups',
+      onTabChange: handlers.onTabChange,
+      onBack: handlers.onBackToGroups,
+      backLabel: handlers.groupDetailBackLabel(),
       accountPill: null,
     },
     AUTH: {

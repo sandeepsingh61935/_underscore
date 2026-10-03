@@ -42,6 +42,7 @@ import {
   useRelatedTags,
 } from '@/web/hooks/useRelatedness';
 import { useVaultSync } from '@/web/hooks/useVaultSync';
+import { useWebGroups } from '@/web/hooks/useWebGroups';
 import { useWebHighlightDelete } from '@/web/hooks/useWebHighlightDelete';
 import { useWebLibrary, type WebHighlight } from '@/web/hooks/useWebLibrary';
 import { trackEvent } from '@/web/lib/analytics';
@@ -49,6 +50,7 @@ import { isHandheldClient } from '@/web/lib/classify-web-client';
 import { useMobileWebViewport } from '@/web/lib/is-mobile-web-viewport';
 import { useWebClientKind } from '@/web/lib/use-web-client-kind';
 import { clampPage } from '@/web/lib/buildPagerItems';
+import { createWebGroupRepository } from '@/web/lib/web-group-repository';
 import { LibraryPager } from '@/web/components/LibraryPager';
 import { createOptimisticMetadataHandlers } from '@/web/lib/optimisticMetadataSave';
 import {
@@ -60,6 +62,7 @@ import {
   parseLibrarySelection,
 } from '@/web/routing/librarySelection';
 import { PhoneLibrary } from '@/web/components/PhoneLibrary';
+import { buildGroupPageUrlSet } from '@/shared/utils/group-library-search';
 
 type LibSort = 'newest' | 'oldest' | 'domain' | 'quote';
 
@@ -240,6 +243,14 @@ export function LibraryPage(): React.ReactElement {
     autoSync: true,
   });
 
+  const groupsRepository = useMemo(() => createWebGroupRepository(), []);
+  const webGroups = useWebGroups({
+    isAuthenticated: !caps.isGuest,
+    repository: groupsRepository,
+  });
+
+  const corpusBase = lib.highlights;
+
   const selection = useMemo(
     () => parseLibrarySelection(location.search),
     [location.search]
@@ -258,6 +269,7 @@ export function LibraryPage(): React.ReactElement {
   const [tagFilters, setTagFilters] = useState<string[]>(() =>
     initialTagFromUrl ? [initialTagFromUrl] : []
   );
+  const [groupFilters, setGroupFilters] = useState<string[]>([]);
   const [sort, setSort] = useState<LibSort>('newest');
   const [sortOpen, setSortOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -472,40 +484,72 @@ export function LibraryPage(): React.ReactElement {
     setExpanded((prev) => ({ ...prev, [domain]: !prev[domain] }));
   }, []);
 
-  const scoped = useMemo(
-    () => filterBySelection(lib.highlights, selection.domain, selection.section),
-    [lib.highlights, selection.domain, selection.section]
+  const scoped = useMemo(() => {
+    return filterBySelection(corpusBase, selection.domain, selection.section);
+  }, [corpusBase, selection.domain, selection.section]);
+
+  const filtering =
+    query.trim().length > 0 ||
+    refine.length > 0 ||
+    tagFilters.length > 0 ||
+    groupFilters.length > 0;
+
+  const knownGroupPages = useMemo(
+    () =>
+      lib.highlights.map((h) => ({
+        urlNormalized: `https://${h.domain}${h.path || '/'}`,
+        title: h.quote.slice(0, 120),
+        faviconUrl: null,
+      })),
+    [lib.highlights]
   );
 
-  const filtering = query.trim().length > 0 || refine.length > 0 || tagFilters.length > 0;
+  /** All group items flattened for the Group filter's resolved-page set. */
+  const allGroupItems = useMemo(
+    () => Object.values(webGroups.itemsByGroup).flat(),
+    [webGroups.itemsByGroup]
+  );
+  const availableGroups = useMemo(
+    () => webGroups.groups.map((g) => ({ id: g.id, name: g.name })),
+    [webGroups.groups]
+  );
 
-  const filtered = useMemo(() => {
+  const groupUrlSet = useMemo(
+    () => buildGroupPageUrlSet(allGroupItems, knownGroupPages, groupFilters),
+    [allGroupItems, knownGroupPages, groupFilters]
+  );
+
+  const refinedHighlights = useMemo(() => {
     const base = [...scoped].sort(SORT_FNS.newest);
-    const refined = filterHighlightsByRefineAndTags(base.map(toSearchable), {
+    return filterHighlightsByRefineAndTags(base.map(toSearchable), {
       refine,
       tagFilters,
+      groupUrlSet,
     });
+  }, [scoped, refine, tagFilters, groupUrlSet]);
+
+  const filtered = useMemo(() => {
     const q = query.trim();
     let rows: { highlight: WebHighlight; matchedFields: SearchField[] }[];
     if (!q) {
-      rows = refined.map((h) => ({
+      rows = refinedHighlights.map((h) => ({
         highlight: h as WebHighlight,
         matchedFields: [] as SearchField[],
       }));
     } else {
-      rows = searchHighlights(refined, q, fields).map((m) => ({
+      rows = searchHighlights(refinedHighlights, q, fields).map((m) => ({
         highlight: m.highlight as WebHighlight,
         matchedFields: m.matchedFields,
       }));
     }
     const cmp = SORT_FNS[sort] ?? SORT_FNS.newest;
     return [...rows].sort((a, b) => cmp(a.highlight, b.highlight));
-  }, [scoped, refine, tagFilters, query, fields, sort]);
+  }, [refinedHighlights, query, fields, sort]);
 
   // Reset page when filters / selection / sort change
   useEffect(() => {
     setPage(1);
-  }, [selection.domain, selection.section, query, refine, tagFilters, sort]);
+  }, [selection.domain, selection.section, query, refine, tagFilters, groupFilters, sort]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -701,6 +745,9 @@ export function LibraryPage(): React.ReactElement {
           tagFilters,
           onTagFiltersChange: setTagFilters,
           availableTags: tags,
+          availableGroups,
+          groupFilters,
+          onGroupFiltersChange: setGroupFilters,
         }}
         domain={selection.domain}
         section={selection.section}
@@ -829,7 +876,7 @@ export function LibraryPage(): React.ReactElement {
     );
   }
 
-  const listBody = detailHighlight ? (
+  const detailBody = detailHighlight ? (
     <LibraryHighlightDetail
       key={detailHighlight.id}
       highlight={detailHighlight}
@@ -1073,77 +1120,9 @@ export function LibraryPage(): React.ReactElement {
       </div>
 
       <div className="lib-main" data-od-id="library-main">
-        <div className="lib-main-head">
-          <h2
-            data-od-id="library-scope-title"
-            className="lib-scope-title"
-            title={selection.section ?? selection.domain ?? undefined}
-          >
-            {title}
-          </h2>
-          <div className="lib-main-head-actions">
-            {openPageHref ? (
-              <a
-                className="btn sm ghost"
-                href={openPageHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-od-id="library-open-page"
-              >
-                Open
-              </a>
-            ) : null}
-            {!consumeOnly && selection.domain && !selection.highlight ? (
-              <button
-                type="button"
-                className="sr-icon is-delete"
-                data-od-id="library-scope-delete"
-                aria-label={
-                  selection.section
-                    ? `Delete page ${selection.section}`
-                    : `Delete site ${selection.domain}`
-                }
-                title={selection.section ? 'Delete page' : 'Delete site'}
-                disabled={scoped.length === 0}
-                onClick={() => {
-                  if (!selection.domain) return;
-                  if (selection.section) {
-                    setDeleteSectionTarget({
-                      domain: selection.domain,
-                      path: selection.section,
-                      count: scoped.length,
-                    });
-                  } else {
-                    setDeleteDomainTarget({
-                      domain: selection.domain,
-                      count: scoped.length,
-                    });
-                  }
-                }}
-              >
-                <TrashIco />
-              </button>
-            ) : null}
-            {!consumeOnly && vault.connectionState === 'connected' ? (
-              <button
-                type="button"
-                className="btn sm ghost"
-                data-od-id="library-vault-sync"
-                data-testid="library-vault-sync"
-                disabled={vault.isSyncing}
-                title={
-                  vault.isSyncing
-                    ? 'Syncing to vault…'
-                    : vault.lastSyncedAt
-                      ? `Vault last synced: ${vault.lastSyncedAt}`
-                      : 'Sync to local vault'
-                }
-                onClick={() => void vault.syncNow()}
-              >
-                {vault.isSyncing ? '…' : 'Sync Vault'}
-              </button>
-            ) : null}
-            {!consumeOnly && caps.flags.export ? (
+        {(() => {
+          const downloadButtonNode =
+            !consumeOnly && caps.flags.export ? (
               <div className="export-menu" data-od-id="library-export" ref={exportRef}>
                 <button
                   type="button"
@@ -1189,9 +1168,84 @@ export function LibraryPage(): React.ReactElement {
                   </div>
                 ) : null}
               </div>
-            ) : null}
-          </div>
-        </div>
+            ) : null;
+
+          return (
+            <div className="lib-main-head">
+              <h2
+                data-od-id="library-scope-title"
+                className="lib-scope-title"
+                title={selection.section ?? selection.domain ?? undefined}
+              >
+                {title}
+              </h2>
+              <div className="lib-main-head-actions">
+                    {openPageHref ? (
+                      <a
+                        className="btn sm ghost"
+                        href={openPageHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-od-id="library-open-page"
+                      >
+                        Open
+                      </a>
+                    ) : null}
+                    {!consumeOnly && selection.domain && !selection.highlight ? (
+                      <button
+                        type="button"
+                        className="sr-icon is-delete"
+                        data-od-id="library-scope-delete"
+                        aria-label={
+                          selection.section
+                            ? `Delete page ${selection.section}`
+                            : `Delete site ${selection.domain}`
+                        }
+                        title={selection.section ? 'Delete page' : 'Delete site'}
+                        disabled={scoped.length === 0}
+                        onClick={() => {
+                          if (!selection.domain) return;
+                          if (selection.section) {
+                            setDeleteSectionTarget({
+                              domain: selection.domain,
+                              path: selection.section,
+                              count: scoped.length,
+                            });
+                          } else {
+                            setDeleteDomainTarget({
+                              domain: selection.domain,
+                              count: scoped.length,
+                            });
+                          }
+                        }}
+                      >
+                        <TrashIco />
+                      </button>
+                    ) : null}
+                    {!consumeOnly && vault.connectionState === 'connected' ? (
+                      <button
+                        type="button"
+                        className="btn sm ghost"
+                        data-od-id="library-vault-sync"
+                        data-testid="library-vault-sync"
+                        disabled={vault.isSyncing}
+                        title={
+                          vault.isSyncing
+                            ? 'Syncing to vault…'
+                            : vault.lastSyncedAt
+                              ? `Vault last synced: ${vault.lastSyncedAt}`
+                              : 'Sync to local vault'
+                        }
+                        onClick={() => void vault.syncNow()}
+                      >
+                        {vault.isSyncing ? '…' : 'Sync Vault'}
+                      </button>
+                    ) : null}
+                    {downloadButtonNode}
+                  </div>
+            </div>
+          );
+        })()}
         <div className="lib-search-wrap" data-od-id="library-search">
           <HighlightSearchBar
             query={query}
@@ -1203,12 +1257,17 @@ export function LibraryPage(): React.ReactElement {
             tagFilters={tagFilters}
             onTagFiltersChange={setTagFilters}
             availableTags={tags}
+            availableGroups={availableGroups}
+            groupFilters={groupFilters}
+            onGroupFiltersChange={setGroupFilters}
             resultCount={filtering ? filtered.length : undefined}
             placeholder="Search highlights…"
             disabled={totalCount === 0 && !filtering}
           />
         </div>
-        <div className="lib-main-body">{listBody}</div>
+        <div className="lib-main-body">
+          {detailBody}
+        </div>
       </div>
 
       {(() => {

@@ -21,6 +21,7 @@ import {
   useRelatedTags,
 } from '@/features/collections/hooks/useLibraryRelatedness';
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
+import { useGroups } from '@/features/groups/hooks/useGroups';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import {
   guestLibraryLocalBannerCopy,
@@ -29,13 +30,16 @@ import {
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { deleteDomainCopy } from '@/shared/utils/confirm-dialog-copy';
 import {
+  buildGroupPageUrlSet,
   countGranularSearchResults,
   groupSearchResultsByDomainAndSection,
   matchDomainNames,
+  matchGroupNames,
 } from '@/shared/utils/group-library-search';
 import {
   DEFAULT_SEARCH_FIELDS,
   filterHighlightsByRefineAndTags,
+  matchesGroupUrl,
   type RefineFilter,
 } from '@/shared/utils/highlight-filter';
 import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
@@ -44,6 +48,7 @@ import { getSectionKey } from '@/shared/utils/section-key';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { LibraryEmptyGuest } from '@/ui-system/components/empty-states/LibraryEmptyGuest';
 import { LibraryStarters } from '@/ui-system/components/empty-states/LibraryStarters';
+import { ColorSwatch } from '@/ui-system/components/primitives/ColorSwatch';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
 
 export interface CollectionsViewProps {
@@ -53,6 +58,8 @@ export interface CollectionsViewProps {
   isAuthenticated?: boolean;
   onSignIn?: () => void;
   onOpenHighlight?: (highlight: OpenedHighlight) => void;
+  /** Open a page group in GroupDetailView (popup). Web falls back to noop until Task 1.9. */
+  onGroupClick?: (groupId: string) => void;
 }
 
 export function CollectionsView({
@@ -61,12 +68,14 @@ export function CollectionsView({
   isAuthenticated: propIsAuthenticated,
   onSignIn,
   onOpenHighlight,
+  onGroupClick,
 }: CollectionsViewProps): React.ReactElement {
   const navigate = useNavigate();
   const appContext = useApp();
 
   const isAuthenticated = propIsAuthenticated ?? appContext.isAuthenticated;
   const mode = (appContext.currentMode ?? DEFAULT_MODE) as ModeType;
+
 
   const { collections, isLoading } = useCollections(mode);
   const exportGate = useModeFeature('export', isAuthenticated);
@@ -80,6 +89,7 @@ export function CollectionsView({
   ]);
   const [refine, setRefine] = useState<RefineFilter[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const [groupFilters, setGroupFilters] = useState<string[]>([]);
   const [deleteDomain, setDeleteDomain] = useState<{
     domain: string;
     count: number;
@@ -93,9 +103,35 @@ export function CollectionsView({
     fields: searchFields,
   });
 
+  // Page Groups for the Group filter + group-name matches (read-only here).
+  const { groups: pageGroups, items: groupItems } = useGroups();
+  const liveGroups = useMemo(
+    () => pageGroups.filter((g) => g.deletedAt === null),
+    [pageGroups]
+  );
+  const availableGroups = useMemo(
+    () => liveGroups.map((g) => ({ id: g.id, name: g.name })),
+    [liveGroups]
+  );
+
+  /** Known pages for domain-rule expansion: the current search corpus. */
+  const knownGroupPages = useMemo(
+    () => searchResults.map((r) => ({ urlNormalized: r.url })),
+    [searchResults]
+  );
+  const groupUrlSet = useMemo(
+    () => buildGroupPageUrlSet(groupItems, knownGroupPages, groupFilters),
+    [groupItems, knownGroupPages, groupFilters]
+  );
+
   const filteredResults = useMemo(
-    () => filterHighlightsByRefineAndTags(searchResults, { refine, tagFilters }),
-    [searchResults, refine, tagFilters]
+    () =>
+      filterHighlightsByRefineAndTags(searchResults, {
+        refine,
+        tagFilters,
+        groupUrlSet,
+      }),
+    [searchResults, refine, tagFilters, groupUrlSet]
   );
 
   const isSearching = searchQuery.trim().length > 0;
@@ -119,6 +155,27 @@ export function CollectionsView({
   const searchResultCount = useMemo(
     () => countGranularSearchResults(searchGroups),
     [searchGroups]
+  );
+
+  /**
+   * Group-name matches render as a section ABOVE domains (read-only: name,
+   * swatch, highlight count — no edit controls). Counts reuse the filtered
+   * results scoped to each group's resolved pages.
+   */
+  const matchedGroups = useMemo(() => {
+    if (!isSearching) return [];
+    return matchGroupNames(liveGroups, searchQuery).map((group) => {
+      const urls = buildGroupPageUrlSet(groupItems, knownGroupPages, [group.id]);
+      const highlights = urls
+        ? filteredResults.filter((r) => matchesGroupUrl(r, urls))
+        : filteredResults;
+      return { group, highlights };
+    });
+  }, [isSearching, liveGroups, searchQuery, groupItems, knownGroupPages, filteredResults]);
+
+  const pureGroupNameMatches = useMemo(
+    () => matchedGroups.filter((m) => m.highlights.length === 0).length,
+    [matchedGroups]
   );
 
   const availableTags = useMemo(
@@ -149,6 +206,7 @@ export function CollectionsView({
     setSearchFields([...DEFAULT_SEARCH_FIELDS]);
     setRefine([]);
     setTagFilters([]);
+    setGroupFilters([]);
   };
 
   const handleCollectionClick = (domain: string): void => {
@@ -251,7 +309,10 @@ export function CollectionsView({
           tagFilters={tagFilters}
           onTagFiltersChange={setTagFilters}
           availableTags={availableTags}
-          resultCount={isSearching ? searchResultCount : undefined}
+          availableGroups={availableGroups}
+          groupFilters={groupFilters}
+          onGroupFiltersChange={setGroupFilters}
+          resultCount={isSearching ? searchResultCount + pureGroupNameMatches : undefined}
         />
       </div>
 
@@ -294,7 +355,7 @@ export function CollectionsView({
                 />
               ))}
             </div>
-          ) : searchGroups.length === 0 ? (
+          ) : searchGroups.length === 0 && matchedGroups.length === 0 ? (
             <EmptyState
               variant="no-results"
               size="sm"
@@ -303,7 +364,24 @@ export function CollectionsView({
               action={{ label: noMatches.resetLabel, onClick: clearSearchAndFilters }}
             />
           ) : (
-            searchGroups.map((group) => (
+            <>
+              {matchedGroups.length > 0 ? (
+                <div data-testid="search-group-section">
+                  {matchedGroups.map(({ group, highlights }) => (
+                    <LibrarySearchGroupHeader
+                      key={group.id}
+                      level="group"
+                      title={group.name}
+                      meta={formatSearchMatchMeta(highlights.length, true)}
+                      leading={
+                        <ColorSwatch color={group.color} size="sm" variant="solid" />
+                      }
+                      onOpen={() => onGroupClick?.(group.id)}
+                    />
+                  ))}
+                </div>
+              ) : null}
+              {searchGroups.map((group) => (
               <div key={group.domain} data-testid="search-domain-group">
                 <LibrarySearchGroupHeader
                   level="domain"
@@ -379,7 +457,8 @@ export function CollectionsView({
                   </div>
                 ))}
               </div>
-            ))
+            ))}
+            </>
           )
         ) : collections.length === 0 && isAuthenticated ? (
           <LibraryStarters />

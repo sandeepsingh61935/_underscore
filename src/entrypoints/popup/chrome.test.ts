@@ -10,8 +10,10 @@ const makeHandlers = (): ChromeHandlers => ({
   onBackToCollections: vi.fn(),
   onBackToDomain: vi.fn(),
   onBackToHighlight: vi.fn(),
+  onBackToGroups: vi.fn(),
   highlightBackLabel: vi.fn(() => 'Library'),
   subDomainBackLabel: vi.fn(() => 'anthropic.com'),
+  groupDetailBackLabel: vi.fn(() => 'Groups'),
   getModeId: vi.fn(() => 'local'),
   getAccountPill: vi.fn((): AccountPillLabel | null => 'Free'),
   onAccountPillClick: vi.fn(),
@@ -41,6 +43,8 @@ describe('chrome brand-only title strip', () => {
       COLLECTIONS: 'library',
       DOMAIN_DETAILS: 'library',
       SUB_DOMAIN: 'library',
+      GROUPS: 'groups',
+      GROUP_DETAIL: 'groups',
       SETTINGS: 'settings',
       AUTH: 'sign in',
     };
@@ -49,6 +53,8 @@ describe('chrome brand-only title strip', () => {
       'COLLECTIONS',
       'DOMAIN_DETAILS',
       'SUB_DOMAIN',
+      'GROUPS',
+      'GROUP_DETAIL',
       'SETTINGS',
       'AUTH',
     ] as const) {
@@ -97,6 +103,23 @@ describe('chrome brand-only title strip', () => {
     const map = buildChrome(handlers);
     expect(map.SUB_DOMAIN.onBack).toBe(handlers.onBackToDomain);
     expect(map.SUB_DOMAIN.backLabel).toBe('anthropic.com');
+  });
+
+  it('GROUPS has groups title and groups tab', () => {
+    const handlers = makeHandlers();
+    const map = buildChrome(handlers);
+    expect(map.GROUPS.title).toBe('_underscore · groups');
+    expect(map.GROUPS.showModeHeader).toBe(true);
+    expect(map.GROUPS.showTabBar).toBe(true);
+    expect(map.GROUPS.activeTab).toBe('groups');
+  });
+
+  it('GROUP_DETAIL wires back to groups', () => {
+    const handlers = makeHandlers();
+    const map = buildChrome(handlers);
+    expect(map.GROUP_DETAIL.onBack).toBe(handlers.onBackToGroups);
+    expect(map.GROUP_DETAIL.backLabel).toBe('Groups');
+    expect(map.GROUP_DETAIL.activeTab).toBe('groups');
   });
 
   it('SETTINGS activeTab is settings', () => {

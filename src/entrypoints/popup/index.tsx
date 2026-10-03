@@ -73,6 +73,16 @@ const HighlightQuoteView = React.lazy(() =>
     default: m.HighlightQuoteView,
   }))
 );
+const GroupDetailView = React.lazy(() =>
+  import('../../features/groups/views/GroupDetailView').then((m) => ({
+    default: m.GroupDetailView,
+  }))
+);
+const GroupsListView = React.lazy(() =>
+  import('../../features/groups/views/GroupsListView').then((m) => ({
+    default: m.GroupsListView,
+  }))
+);
 
 function ViewSkeleton(): React.ReactElement {
   return (
@@ -100,6 +110,8 @@ enum View {
   DOMAIN_DETAILS = 'DOMAIN_DETAILS',
   SUB_DOMAIN = 'SUB_DOMAIN',
   HIGHLIGHT = 'HIGHLIGHT',
+  GROUPS = 'GROUPS',
+  GROUP_DETAIL = 'GROUP_DETAIL',
   AUTH = 'AUTH',
   SETTINGS = 'SETTINGS',
   DASHBOARD = 'DASHBOARD',
@@ -244,6 +256,7 @@ function PopupApp(): React.ReactElement {
   const [selectedSection, setSelectedSection] = useState<string>(initial.selectedSection);
   const [openedHighlight, setOpenedHighlight] = useState<OpenedHighlight | null>(null);
   const [highlightReturn, setHighlightReturn] = useState<View>(View.SUB_DOMAIN);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [isStorageReady, setIsStorageReady] = useState(true);
   const [pendingMode, setPendingMode] = useState<ModeType | null>(initial.pendingMode);
   const [prevUser, setPrevUser] = useState<typeof user | undefined>(undefined);
@@ -397,6 +410,16 @@ function PopupApp(): React.ReactElement {
     setCurrentView(View.DOMAIN_DETAILS);
   };
 
+  const handleGroupClick = (groupId: string): void => {
+    setSelectedGroupId(groupId);
+    setCurrentView(View.GROUP_DETAIL);
+  };
+
+  const handleBackToGroups = (): void => {
+    setSelectedGroupId(null);
+    setCurrentView(View.GROUPS);
+  };
+
   const handleOpenHighlight = (highlight: OpenedHighlight): void => {
     setOpenedHighlight(highlight);
     setHighlightReturn(currentView);
@@ -434,6 +457,9 @@ function PopupApp(): React.ReactElement {
       case 'collections':
         setCurrentView(View.COLLECTIONS);
         break;
+      case 'groups':
+        setCurrentView(View.GROUPS);
+        break;
       case 'settings':
         handleSettingsClick();
         break;
@@ -456,8 +482,10 @@ function PopupApp(): React.ReactElement {
       onBackToCollections: handleBackToCollections,
       onBackToDomain: handleBackToDomain,
       onBackToHighlight: handleBackFromHighlight,
+      onBackToGroups: handleBackToGroups,
       highlightBackLabel: () => openedHighlight?.domain || 'Library',
       subDomainBackLabel: () => selectedDomain,
+      groupDetailBackLabel: () => 'Groups',
       getModeId: () => modeId,
       getAccountPill: () =>
         resolveAccountPillLabel({
@@ -474,6 +502,7 @@ function PopupApp(): React.ReactElement {
       handleBackToCollections,
       handleBackToDomain,
       handleBackFromHighlight,
+      handleBackToGroups,
       openedHighlight?.domain,
       selectedDomain,
       modeId,
@@ -512,10 +541,31 @@ function PopupApp(): React.ReactElement {
           onCollectionClick={handleCollectionClick}
           onSectionClick={handleSectionClick}
           onOpenHighlight={handleOpenHighlight}
+          onGroupClick={handleGroupClick}
           isAuthenticated={!!user}
           onSignIn={() => setCurrentView(View.AUTH)}
         />
       );
+      break;
+    case View.GROUPS:
+      viewContent = (
+        <GroupsListView
+          onGroupClick={handleGroupClick}
+          isAuthenticated={Boolean(user)}
+          onSignIn={() => setCurrentView(View.AUTH)}
+          onOpenSettings={() => setCurrentView(View.SETTINGS)}
+        />
+      );
+      break;
+    case View.GROUP_DETAIL:
+      viewContent = selectedGroupId ? (
+        <GroupDetailView
+          groupId={selectedGroupId}
+          isAuthenticated={!!user}
+          onDeleted={handleBackToGroups}
+          onOpenHighlight={handleOpenHighlight}
+        />
+      ) : null;
       break;
     case View.DOMAIN_DETAILS:
       viewContent = (
@@ -587,6 +637,8 @@ function PopupApp(): React.ReactElement {
         open={deviceUploadPrompt.open}
         email={deviceUploadPrompt.email}
         pendingCount={deviceUploadPrompt.pendingCount}
+        pendingGroupCount={deviceUploadPrompt.pendingGroupCount}
+        pendingGroupItemCount={deviceUploadPrompt.pendingGroupItemCount}
         isUploading={deviceUploadPrompt.isUploading}
         error={deviceUploadPrompt.error}
         onClose={deviceUploadPrompt.dismiss}
