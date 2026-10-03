@@ -376,7 +376,7 @@ export function WebGroupAddCard({
                       role="option"
                       aria-selected={isSelected}
                       data-testid={`web-group-add-option-${idx}`}
-                      onMouseEnter={() => setSelectedIndex(idx)}
+                      className="web-group-add-option"
                       onClick={() => void handleSelectOption(opt)}
                       style={{
                         padding: '8px 12px',

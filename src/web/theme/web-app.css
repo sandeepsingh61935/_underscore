@@ -5212,3 +5212,8 @@ html[data-density='roomy'] {
     padding: 4px 16px 28px;
   }
 }
+
+.web-group-add-option:hover {
+  background: var(--paper-2) !important;
+}
+
