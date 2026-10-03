@@ -207,7 +207,43 @@ export function registerMcpTools(server: McpServer, adapter: McpAdapter): void {
     },
   );
 
+  server.tool(
+    'list_groups',
+    'List all page groups with their name, color, item count, and browser tab group binding state.',
+    {},
+    readOnlyAnnotation,
+    async () => {
+      const data = await adapter.dispatch('list_groups');
+      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'get_group',
+    'Get full details of a specific page group, including its member items, resolved pages, and highlight counts.',
+    {
+      id: z.string().describe('The unique ID (UUID) of the page group'),
+    },
+    readOnlyAnnotation,
+    async ({ id }) => {
+      const data = await adapter.dispatch('get_group', { id });
+      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+
   // ── Native MCP Resources ──────────────────────────────────────────────────
+  server.resource('groups', 'underscore://groups', async (uri) => {
+    const data = await adapter.dispatch('list_groups');
+    return {
+      contents: [
+        {
+          uri: uri.href,
+          text: JSON.stringify(data, null, 2),
+          mimeType: 'application/json',
+        },
+      ],
+    };
+  });
   server.resource('recent_highlights', 'underscore://recent', async (uri) => {
     const data = (await adapter.dispatch('get_recent_highlights', { limit: 20 })) as { highlights?: unknown[] };
     return {
