@@ -165,4 +165,52 @@ describe('HighlightQueryService.search', () => {
     await svc.search('hello');
     expect(readable.findAll).toHaveBeenCalledTimes(2);
   });
+
+  it('filters by tagFilters even when query is empty', async () => {
+    const readable = makeReadable([
+      hl({
+        id: 'h-1',
+        text: 'first',
+        url: 'https://example.com/a',
+        metadata: { source: 'user', tags: ['architecture', 'security'] },
+      }),
+      hl({
+        id: 'h-2',
+        text: 'second',
+        url: 'https://other.com/b',
+        metadata: { source: 'user', tags: ['random'] },
+      }),
+    ]);
+    const svc = new HighlightQueryService(readable);
+
+    const results = await svc.search('', { tagFilters: ['architecture'] });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.id).toBe('h-1');
+    expect(results[0]?.matchedFields).toEqual([]);
+  });
+
+  it('filters by refine chips even when query is empty', async () => {
+    const readable = makeReadable([
+      hl({
+        id: 'h-1',
+        text: 'has note',
+        url: 'https://example.com/a',
+        metadata: { source: 'user', notes: 'my thoughts' },
+      }),
+      hl({
+        id: 'h-2',
+        text: 'no note',
+        url: 'https://other.com/b',
+        metadata: { source: 'user' },
+      }),
+    ]);
+    const svc = new HighlightQueryService(readable);
+
+    const results = await svc.search('', { refine: ['has_notes'] });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.id).toBe('h-1');
+    expect(results[0]?.matchedFields).toEqual([]);
+  });
 });

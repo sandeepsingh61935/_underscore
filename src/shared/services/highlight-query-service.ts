@@ -23,6 +23,8 @@ import {
   compareByHighlightActivityDesc,
   highlightActivityMs,
 } from '@/shared/utils/highlight-activity';
+import type { RefineFilter } from '@/shared/utils/highlight-filter';
+import { filterHighlightsByRefineAndTags } from '@/shared/utils/highlight-filter';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { searchHighlights } from '@/shared/utils/highlight-search';
@@ -205,9 +207,19 @@ export class HighlightQueryService {
    */
   async search(
     query: string,
-    options?: { domain?: string; section?: string; fields?: SearchField[] }
+    options?: {
+      domain?: string;
+      section?: string;
+      fields?: SearchField[];
+      refine?: RefineFilter[];
+      tagFilters?: string[];
+    }
   ): Promise<Array<DomainHighlightSummary & { matchedFields: SearchField[] }>> {
-    if (!query || !query.trim()) {
+    const trimmed = (query ?? '').trim();
+    const hasRefine = Boolean(options?.refine && options.refine.length > 0);
+    const hasTags = Boolean(options?.tagFilters && options.tagFilters.length > 0);
+
+    if (!trimmed && !hasRefine && !hasTags) {
       return [];
     }
 
@@ -266,9 +278,21 @@ export class HighlightQueryService {
       mapped.push(summary);
     }
 
-    const matches = searchHighlights(mapped, query, options?.fields);
-    const enriched = await this.resolveTags(matches.map((m) => m.highlight));
+    const enriched = await this.resolveTags(mapped);
     const enrichedById = new Map(enriched.map((summary) => [summary.id, summary]));
+
+    const refined = filterHighlightsByRefineAndTags(enriched, {
+      refine: options?.refine,
+      tagFilters: options?.tagFilters,
+    });
+
+    let matches: Array<{ highlight: DomainHighlightSummary; matchedFields: SearchField[] }>;
+    if (trimmed) {
+      matches = searchHighlights(refined, trimmed, options?.fields);
+    } else {
+      matches = refined.map((h) => ({ highlight: h, matchedFields: [] }));
+    }
+
     return matches.map((m) => ({
       ...(enrichedById.get(m.highlight.id) ?? m.highlight),
       matchedFields: m.matchedFields,
