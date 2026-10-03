@@ -68,6 +68,12 @@ Do **not** paste ad-hoc DDL into the dashboard for schema that belongs in
 | `20260812120000_ai_preferences.sql` | AI prefs LWW (default + enablement, no secrets) |
 | `20260812140000_ai_preferences_xai.sql` | Allow `xai` in default_provider check |
 | `20260812160000_chat_threads_messages.sql` | Grounded chat threads + messages (ADR-028) |
+| `20260928090000_drop_orphan_collections.sql` | Drop orphan `collections` table (ADR-032, zero rows confirmed) |
+| `20260928120000_page_groups.sql` | page_groups + page_group_items tables, RLS, caps, realtime (ADR-032) |
+| `20260928120100_page_groups_grants_authenticated.sql` | authenticated grants for page groups tables (no DELETE; Task 2.4) |
+| `20260928120200_page_groups_purge.sql` | daily purge of 30-day page-group tombstones (pg_cron-gated) |
+| `20260928120300_page_groups_delete_policy.sql` | tombstone-only DELETE policy + DELETE grants (Task 2.4 client fallback) |
+| `apply-page-groups-manual.sql` | SQL Editor one-shot for page_groups + page_group_items |
 | `bootstrap-cli-migrations-and-apply-ai-preferences.sql` | one-shot history bootstrap + apply ai_preferences |
 | `apply-ai-preferences-manual.sql` | legacy table-only fallback (no history) |
 | `apply-chat-threads-messages-manual.sql` | SQL Editor one-shot for chat_threads + chat_messages |

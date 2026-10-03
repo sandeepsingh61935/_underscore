@@ -7,16 +7,22 @@ import { Container } from '@/background/di/container';
 import { registerEventComponents } from '@/background/events/events-container-registration';
 import type { ConnectionManager } from '@/background/realtime/connection-manager';
 import { registerRealtimeComponents } from '@/background/realtime/realtime-container-registration';
+import type { IndexedDBGroupRepository } from '@/background/repositories/indexed-db-group-repository';
 import { migrateLegacyVaultToBasic } from '@/background/repositories/migrate-legacy-highlight-db';
 import { registerRepositoryComponents } from '@/background/repositories/repository-container-registration';
 import { handleAuthStorageEvent } from '@/background/services/auth-storage-lifecycle';
 import type { EventBridge } from '@/background/services/event-bridge';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 import type { IDeviceLibraryUpload } from '@/background/services/interfaces/i-device-library-upload';
-import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
+import type {
+  GroupSyncCursor,
+  LibrarySyncCursor,
+} from '@/background/services/library-sync-cursor';
 import type { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
 import type { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
+import type { RealtimeGroupIngestService } from '@/background/services/realtime-group-ingest-service';
 import type { RealtimeHighlightIngestService } from '@/background/services/realtime-highlight-ingest-service';
+import type { TabGroupSyncService } from '@/background/services/tab-group-sync-service';
 import { registerSyncComponents } from '@/background/sync/sync-container-registration';
 import { setDeviceUploadPromptPending } from '@/shared/constants/device-upload-prompt';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
@@ -91,6 +97,9 @@ export async function initializeBackground(): Promise<Container> {
   );
   const realtimeHighlightIngestService =
     container.resolve<RealtimeHighlightIngestService>('realtimeHighlightIngestService');
+  const realtimeGroupIngestService = container.resolve<RealtimeGroupIngestService>(
+    'realtimeGroupIngestService'
+  );
   const llmKeyStoreHolder = container.resolve<LlmKeyStoreHolder>('llmKeyStoreHolder');
   const deviceLibraryUpload =
     container.resolve<IDeviceLibraryUpload>('deviceLibraryUpload');
@@ -120,9 +129,20 @@ export async function initializeBackground(): Promise<Container> {
     cloudHydration: cloudHydrationService,
     syncCursor: librarySyncCursor,
     echoTracker: localWriteEchoTracker,
+    // Task 2.3: sign-out wipe also clears the Pro group stores + groups cursor.
+    proGroupStore: container.resolve<IndexedDBGroupRepository>('proGroupRepository'),
+    groupSyncCursor: container.resolve<GroupSyncCursor>('groupSyncCursor'),
   };
 
   realtimeHighlightIngestService.initialize();
+  realtimeGroupIngestService.initialize();
+
+  const tabGroupSyncService =
+    container.resolve<TabGroupSyncService>('tabGroupSyncService');
+  tabGroupSyncService.registerTopLevelListeners();
+  void tabGroupSyncService.reconcileOnStartup().catch((err) => {
+    logger.warn('[BOOTSTRAP] Startup tab group reconciliation failed', err);
+  });
 
   // 3. Initialize & Wire Signals
   const authManager = container.resolve<IAuthManager>('authManager');

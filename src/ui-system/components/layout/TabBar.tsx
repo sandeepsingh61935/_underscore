@@ -10,16 +10,18 @@ export interface TabBarProps {
 const TABS: ReadonlyArray<{ id: ActiveTab; label: string }> = [
   { id: 'home', label: 'Home' },
   { id: 'collections', label: 'Library' },
+  { id: 'groups', label: 'Groups' },
   { id: 'settings', label: 'Settings' },
 ];
 
 export function TabBar({ active = 'home', onChange }: TabBarProps): React.ReactElement {
   return (
-    <nav className="tabbar" aria-label="Primary">
+    <nav className="tabbar" aria-label="Primary" data-testid="popup-tabbar">
       {TABS.map((t) => (
         <button
           key={t.id}
           type="button"
+          data-testid={`tab-${t.id}`}
           className={active === t.id ? 'active' : ''}
           aria-current={active === t.id ? 'page' : undefined}
           onClick={() => onChange?.(t.id)}

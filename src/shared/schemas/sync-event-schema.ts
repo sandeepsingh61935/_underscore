@@ -22,9 +22,6 @@ export const SyncEventTypeSchema = z.enum([
   'highlight.created',
   'highlight.updated',
   'highlight.deleted',
-  'collection.created',
-  'collection.updated',
-  'collection.deleted',
 ]);
 
 /**
@@ -85,8 +82,6 @@ export const SyncEventSchema = z.discriminatedUnion('type', [
     type: z.literal('highlight.deleted'),
     payload: HighlightDeletedPayloadSchema,
   }),
-  // Collection events omitted for brevity as they follow similar pattern
-  // and are not primary focus of this phase
 ]);
 
 export type SyncEvent = z.infer<typeof SyncEventSchema>;

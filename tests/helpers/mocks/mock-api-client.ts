@@ -2,7 +2,6 @@ import type {
   IAPIClient,
   PushResult,
   SyncEvent,
-  Collection,
 } from '@/background/api/interfaces/i-api-client';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
@@ -46,21 +45,6 @@ export class MockAPIClient implements IAPIClient {
   }
 
   async pullEvents(_since: number): Promise<SyncEvent[]> {
-    return [];
-  }
-
-  async createCollection(name: string, description?: string): Promise<Collection> {
-    return {
-      id: 'mock-collection-id',
-      name,
-      description,
-      highlight_count: 0,
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
-  }
-
-  async getCollections(): Promise<Collection[]> {
     return [];
   }
 }

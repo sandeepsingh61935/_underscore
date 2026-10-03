@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { McpAdapter } from './types.js';
 import { displayTextFromCloudRow, HIGHLIGHTS_SELECT_COLUMNS, notesAndTagsFromCloudRow } from './cloud-highlight-text.js';
+import { SupabaseGroupsAdapter } from './supabase-groups-adapter.js';
 
 export interface SupabaseAdapterConfig {
   supabaseUrl: string;
@@ -46,11 +47,13 @@ export class SupabaseMcpAdapter implements McpAdapter {
   readonly name = 'cloud' as const;
   readonly dataCoverage = 'pro_cloud' as const;
   private readonly client: SupabaseClient;
+  private readonly groupsAdapter: SupabaseGroupsAdapter;
 
   constructor(config: SupabaseAdapterConfig) {
     this.client = config.client ?? createClient(config.supabaseUrl, config.supabaseAnonKey, {
       global: { headers: { Authorization: `Bearer ${config.accessToken}` } },
     });
+    this.groupsAdapter = new SupabaseGroupsAdapter(this.client);
   }
 
   isReady(): boolean {
@@ -89,6 +92,10 @@ export class SupabaseMcpAdapter implements McpAdapter {
         return this.fetchHighlight(payload);
       case 'export_highlights':
         return this.exportHighlights(payload);
+      case 'list_groups':
+        return this.groupsAdapter.listGroups();
+      case 'get_group':
+        return this.groupsAdapter.getGroup(payload, () => this.fetchHighlights());
       default:
         throw Object.assign(new Error(`Cloud adapter does not support method: ${method}`), {
           code: 'NOT_SUPPORTED',

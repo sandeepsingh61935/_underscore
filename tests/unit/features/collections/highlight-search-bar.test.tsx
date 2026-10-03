@@ -50,7 +50,7 @@ describe('HighlightSearchBar', () => {
     expect(props.onQueryChange).not.toHaveBeenCalled();
 
     act(() => {
-      vi.advanceTimersByTime(149);
+      vi.advanceTimersByTime(249);
     });
     expect(props.onQueryChange).not.toHaveBeenCalled();
 

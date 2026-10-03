@@ -10,10 +10,17 @@ import type { IEventBus } from '@/shared/interfaces/i-event-bus';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import { EventName } from '@/shared/types/events';
 import {
+  isGroupRowSoftDeleted,
+  type SupabaseGroupItemRow,
+  type SupabaseGroupRow,
+} from '@/shared/utils/supabase-group-row';
+import {
   isHighlightRowSoftDeleted,
   transformHighlightRow,
   type SupabaseHighlightRow,
 } from '@/shared/utils/supabase-highlight-row';
+
+type GroupTable = 'page_groups' | 'page_group_items';
 
 /**
  * WebSocket client for real-time synchronization
@@ -21,6 +28,7 @@ import {
  */
 export class WebSocketClient implements IWebSocketClient {
   private channel?: RealtimeChannel;
+  private groupsChannel?: RealtimeChannel;
   private currentUserId?: string;
 
   constructor(
@@ -119,6 +127,50 @@ export class WebSocketClient implements IWebSocketClient {
             );
           }
         });
+
+      // Second channel for Page Groups (plan Phase 2 Task 2.3): both group
+      // tables, owner-filtered like the highlights channel above.
+      this.groupsChannel = this.supabase
+        .channel('groups-sync')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'page_groups',
+            filter: `user_id=eq.${userId}`,
+          },
+          (payload: RealtimePostgresChangesPayload<SupabaseGroupRow>) =>
+            this.handleGroupChange('page_groups', payload)
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'page_group_items',
+            filter: `user_id=eq.${userId}`,
+          },
+          (payload: RealtimePostgresChangesPayload<SupabaseGroupItemRow>) =>
+            this.handleGroupChange('page_group_items', payload)
+        )
+        .subscribe((status: string, err?: Error) => {
+          this.logger.info(`Realtime groups subscription status: ${status}`, {
+            userId,
+            error: err,
+          });
+
+          if (status === 'SUBSCRIBED') {
+            this.logger.info(
+              '[WebSocketClient] [OK] Successfully subscribed to groups channel'
+            );
+          } else if (status === 'CHANNEL_ERROR') {
+            this.logger.error(
+              'Realtime groups channel error',
+              err || new Error('Unknown channel error')
+            );
+          }
+        });
     } catch (error) {
       this.logger.error('Failed to subscribe to realtime', error as Error);
       throw error;
@@ -134,6 +186,10 @@ export class WebSocketClient implements IWebSocketClient {
       this.channel.unsubscribe();
       this.channel = undefined;
     }
+    if (this.groupsChannel) {
+      this.groupsChannel.unsubscribe();
+      this.groupsChannel = undefined;
+    }
     this.currentUserId = undefined;
   }
 
@@ -141,7 +197,9 @@ export class WebSocketClient implements IWebSocketClient {
    * Check if currently connected
    */
   isConnected(): boolean {
-    return this.channel?.state === 'joined';
+    return (
+      this.channel?.state === 'joined' || this.groupsChannel?.state === 'joined'
+    );
   }
 
   /**
@@ -196,6 +254,70 @@ export class WebSocketClient implements IWebSocketClient {
         const id = payload.old?.id;
         this.logger.info('[WebSocketClient] Emitting REMOTE_HIGHLIGHT_DELETED', { id });
         this.eventBus.emit(EventName.REMOTE_HIGHLIGHT_DELETED, { id });
+        break;
+      }
+      default:
+        this.logger.warn('Unknown realtime event type', { type: eventType });
+    }
+  }
+
+  /**
+   * Handle incoming Page Groups change events from Supabase.
+   * Mirrors handleChange: raw snake_case rows pass through the EventBus and
+   * the group ingest service maps them. Soft deletes arrive as UPDATE rows
+   * with deleted_at set (there is no DELETE RLS policy until Task 2.4).
+   */
+  private handleGroupChange(
+    table: GroupTable,
+    payload: RealtimePostgresChangesPayload<SupabaseGroupRow | SupabaseGroupItemRow>
+  ): void {
+    if (!payload || typeof payload !== 'object') {
+      this.logger.warn('[WebSocketClient] Ignoring malformed groups payload', {
+        payloadType: typeof payload,
+      });
+      return;
+    }
+    const isGroup = table === 'page_groups';
+    const eventType = payload.eventType;
+    this.logger.info('[WebSocketClient] [MSG] Received groups realtime event', {
+      event: eventType,
+      table,
+      hasNew: !!payload.new,
+      hasOld: !!payload.old,
+    });
+
+    switch (eventType) {
+      case 'INSERT': {
+        const row = payload.new;
+        if (!row) return;
+        this.eventBus.emit(
+          isGroup ? EventName.REMOTE_GROUP_CREATED : EventName.REMOTE_GROUP_ITEM_CREATED,
+          row
+        );
+        break;
+      }
+      case 'UPDATE': {
+        const row = payload.new;
+        if (!row) return;
+        if (isGroupRowSoftDeleted(row)) {
+          this.eventBus.emit(
+            isGroup ? EventName.REMOTE_GROUP_DELETED : EventName.REMOTE_GROUP_ITEM_DELETED,
+            { id: (row as { id?: string }).id }
+          );
+        } else {
+          this.eventBus.emit(
+            isGroup ? EventName.REMOTE_GROUP_UPDATED : EventName.REMOTE_GROUP_ITEM_UPDATED,
+            row
+          );
+        }
+        break;
+      }
+      case 'DELETE': {
+        const old = payload.old as { id?: string; group_id?: string } | undefined;
+        this.eventBus.emit(
+          isGroup ? EventName.REMOTE_GROUP_DELETED : EventName.REMOTE_GROUP_ITEM_DELETED,
+          isGroup ? { id: old?.id } : { id: old?.id, groupId: old?.group_id }
+        );
         break;
       }
       default:

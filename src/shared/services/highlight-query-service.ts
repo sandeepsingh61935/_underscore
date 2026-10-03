@@ -78,10 +78,21 @@ export interface DashboardData {
  * layer (callers can cache if needed).
  */
 export class HighlightQueryService {
+  private searchCache: {
+    raw: HighlightDataV2[];
+    timestamp: number;
+  } | null = null;
+  private readonly mappedCache = new WeakMap<HighlightDataV2, DomainHighlightSummary>();
+  private static readonly SEARCH_CACHE_TTL_MS = 2000;
+
   constructor(
     private readonly readable: IReadableHighlightRepository,
     private readonly tagResolver?: ITagLabelResolver
   ) {}
+
+  invalidateSearchCache(): void {
+    this.searchCache = null;
+  }
 
   private async resolveTags(
     summaries: DomainHighlightSummary[]
@@ -200,7 +211,20 @@ export class HighlightQueryService {
       return [];
     }
 
-    const highlights = await this.readable.findAll();
+    const now = Date.now();
+    let highlights: HighlightDataV2[];
+    if (
+      this.searchCache &&
+      now - this.searchCache.timestamp < HighlightQueryService.SEARCH_CACHE_TTL_MS
+    ) {
+      highlights = this.searchCache.raw;
+    } else {
+      highlights = await this.readable.findAll();
+      this.searchCache = {
+        raw: highlights,
+        timestamp: now,
+      };
+    }
 
     const scoped = options?.domain
       ? highlights.filter((hl) => hl.url && urlMatchesDomain(hl.url, options.domain!))
@@ -220,20 +244,26 @@ export class HighlightQueryService {
         continue;
       }
 
-      mapped.push({
-        id: hl.id,
-        text: hl.text,
-        url,
-        path,
-        domain,
-        createdAt: hl.createdAt,
-        updatedAt: hl.updatedAt,
-        notes: hl.metadata?.notes,
-        tags: hl.metadata?.tags,
-        sourceKind: hl.metadata?.sourceKind,
-        language: hl.metadata?.language,
-        presentation: hl.metadata?.presentation,
-      });
+      let summary = this.mappedCache.get(hl);
+      if (!summary || summary.domain !== domain || summary.path !== path) {
+        summary = {
+          id: hl.id,
+          text: hl.text,
+          url,
+          path,
+          domain,
+          createdAt: hl.createdAt,
+          updatedAt: hl.updatedAt,
+          notes: hl.metadata?.notes,
+          tags: hl.metadata?.tags,
+          sourceKind: hl.metadata?.sourceKind,
+          language: hl.metadata?.language,
+          presentation: hl.metadata?.presentation,
+        };
+        this.mappedCache.set(hl, summary);
+      }
+
+      mapped.push(summary);
     }
 
     const matches = searchHighlights(mapped, query, options?.fields);

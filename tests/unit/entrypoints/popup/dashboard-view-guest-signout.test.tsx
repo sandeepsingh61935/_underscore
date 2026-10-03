@@ -43,6 +43,7 @@ describe('DashboardView guest sign-out UX', () => {
       domain: 'en.wikipedia.org',
       path: '/wiki/Article',
       title: 'Article - Wikipedia',
+      incognito: false,
     });
 
     vi.mocked(useDashboardData).mockReturnValue({

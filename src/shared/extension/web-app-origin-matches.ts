@@ -14,3 +14,37 @@ export const WEB_APP_ORIGIN_MATCHES = [
   'https://underscore-web.vercel.app/*',
   'https://*.vercel.app/*',
 ] as const;
+
+/**
+ * Validates whether a URL or origin string matches allowed companion web app origins.
+ */
+export function isWebAppOrigin(urlOrOrigin: string): boolean {
+  if (!urlOrOrigin || typeof urlOrOrigin !== 'string') {
+    return false;
+  }
+  try {
+    const parsed = new URL(urlOrOrigin);
+    const { protocol, hostname } = parsed;
+
+    if (protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+      return true;
+    }
+
+    if (protocol === 'https:') {
+      if (
+        hostname === 'underscore-web.pages.dev' ||
+        hostname === 'underscore-web-3i0.pages.dev' ||
+        hostname === 'underscore-web.vercel.app' ||
+        hostname === 'vercel.app' ||
+        hostname.endsWith('.vercel.app')
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+

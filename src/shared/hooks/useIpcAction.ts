@@ -16,15 +16,29 @@ import { useCallback } from 'react';
 
 import { useMessageBus } from '@/shared/contexts/MessageBusContext';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
-import type { MessageResponse } from '@/shared/schemas/message-schemas';
+import type {
+  GroupCapErrorInfo,
+  MessageResponse,
+} from '@/shared/schemas/message-schemas';
 
 /**
  * Result of an IPC action. Mirrors the bus's MessageResponse envelope so
  * callers destructure consistently.
+ *
+ * `scope`/`limit` pass through the serialized GroupCapError
+ * (`GROUP_CAP_EXCEEDED`) so group mutation callers can render cap-aware copy
+ * without parsing the error string.
  */
 export type ActionResult<T> =
   | { success: true; data: T }
-  | { success: false; error: string; code?: string; retryAfterMs?: number };
+  | {
+      success: false;
+      error: string;
+      code?: string;
+      retryAfterMs?: number;
+      scope?: GroupCapErrorInfo['scope'];
+      limit?: number;
+    };
 
 /**
  * Returns true if the chrome.runtime.sendMessage API is available.
@@ -82,6 +96,8 @@ export function useIpcAction<TPayload = void, TResponse = unknown>(
           error: response?.error ?? 'Unknown IPC error',
           code: response?.code,
           retryAfterMs: response?.retryAfterMs,
+          scope: response?.scope,
+          limit: response?.limit,
         };
       } catch (err) {
         return {

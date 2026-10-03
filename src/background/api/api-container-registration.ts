@@ -21,11 +21,16 @@ import type { Container } from '@/background/di/container';
 import type { ILogger } from '@/shared/interfaces/i-logger';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
 
+const PLACEHOLDER_SUPABASE_URL = 'https://placeholder.supabase.co';
+const PLACEHOLDER_SUPABASE_ANON_KEY = 'placeholder-anon-key';
+
 export function registerAPIComponents(container: Container): void {
   container.registerSingleton<SupabaseSDKClient>('_supabaseSDK', () => {
     const config = container.resolve<SupabaseConfig>('supabaseConfig');
+    const url = config.url?.trim() || PLACEHOLDER_SUPABASE_URL;
+    const anonKey = config.anonKey?.trim() || PLACEHOLDER_SUPABASE_ANON_KEY;
 
-    return createClient(config.url, config.anonKey, {
+    return createClient(url, anonKey, {
       auth: {
         storage: new SupabaseStorageAdapter(),
         autoRefreshToken: true,

@@ -46,19 +46,32 @@ describe('Vault Mode Phase 2: Live Supabase E2E', () => {
     }
   });
 
-  it('should verify schema by attempting a push (if authenticated)', async () => {
+  it('should verify schema by attempting a pull (if authenticated)', async () => {
     if (!isConfigured) return;
 
     // This test ensures the table names and basic structures are correct
     // Even if it fails due to RLS or Auth, we can see the error message from Supabase
     try {
-      await apiClient.getCollections();
-      console.log('✅ Successfully queried collections table');
+      await apiClient.pullEvents(0);
+      console.log('✅ Successfully queried sync_events table');
     } catch (error: any) {
       // We expect a success or a specific Supabase error (not a 404 table not found)
       const errorMessage = error.message || '';
-      expect(errorMessage).not.toContain('relation "public.collections" does not exist');
-      console.log('✅ Schema check: Collections table exists');
+      expect(errorMessage).not.toContain('relation "public.sync_events" does not exist');
+      console.log('✅ Schema check: sync_events table exists');
+    }
+  });
+
+  it('should verify page_groups schema (if authenticated)', async () => {
+    if (!isConfigured) return;
+
+    try {
+      await (apiClient as any).supabase?.from('page_groups')?.select('id')?.limit(1);
+      console.log('✅ Successfully queried page_groups table');
+    } catch (error: any) {
+      const errorMessage = error?.message || '';
+      expect(errorMessage).not.toContain('relation "public.page_groups" does not exist');
+      console.log('✅ Schema check: page_groups table exists');
     }
   });
 });

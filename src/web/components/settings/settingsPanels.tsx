@@ -17,6 +17,7 @@ import {
 } from '@/shared/constants/type-presets';
 import type { ThemeType } from '@/shared/types/theme';
 import type { SettingsBillingCta } from '@/shared/utils/settings-billing-cta';
+import { Switch } from '@/ui-system/components/primitives/Switch';
 import { useTypePreset } from '@/ui-system/hooks/useTypePreset';
 import type { WebCaps, WebPlanLabel } from '@/web/caps/resolveWebCaps';
 import { useVaultSync } from '@/web/hooks/useVaultSync';
@@ -434,6 +435,36 @@ export function DataPanel({
     autoSync: true,
   });
 
+  const [tabSyncEnabled, setTabSyncEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('underscore_browser_tab_sync_enabled') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [autoSyncNewGroups, setAutoSyncNewGroups] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem('underscore_auto_sync_new_tab_groups');
+      return stored !== null ? stored === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const handleToggleTabSync = (checked: boolean): void => {
+    setTabSyncEnabled(checked);
+    try {
+      localStorage.setItem('underscore_browser_tab_sync_enabled', String(checked));
+    } catch {}
+  };
+
+  const handleToggleAutoSync = (checked: boolean): void => {
+    setAutoSyncNewGroups(checked);
+    try {
+      localStorage.setItem('underscore_auto_sync_new_tab_groups', String(checked));
+    } catch {}
+  };
+
   const canDeleteLibrary =
     isAuthenticated && highlightCount > 0 && typeof onDeleteLibrary === 'function';
   const deleteDisabledReason = !isAuthenticated
@@ -579,6 +610,54 @@ export function DataPanel({
         onSyncNow={vaultSync.syncNow}
         onFallbackDownload={() => onExport('md')}
       />
+      <div
+        className="block"
+        data-testid="settings-section-tab-groups"
+        data-od-id="settings-section-tab-groups"
+      >
+        <p className="block-label" data-testid="settings-section-tab-groups-title">
+          Browser tab groups
+        </p>
+        <div
+          className="setting-row"
+          data-testid="settings-tab-groups-row"
+          data-od-id="settings-tab-groups-row"
+        >
+          <div className="grow">
+            <div className="title">Browser tab groups</div>
+            <div className="sub" data-testid="settings-tab-groups-status">
+              Mirror tab groups in your browser with Underscore groups. Incognito is never included.
+              <span style={{ display: 'block', marginTop: 2 }}>
+                Mirror status: {tabSyncEnabled ? 'Active' : 'Off'}
+              </span>
+            </div>
+          </div>
+          <Switch
+            checked={tabSyncEnabled}
+            onCheckedChange={handleToggleTabSync}
+            data-testid="settings-tab-groups-toggle"
+            aria-label="Browser tab groups"
+          />
+        </div>
+        {tabSyncEnabled ? (
+          <div
+            className="setting-row"
+            data-testid="settings-tab-groups-auto-sync-row"
+            data-od-id="settings-tab-groups-auto-sync-row"
+          >
+            <div className="grow">
+              <div className="title">Automatically sync new browser tab groups</div>
+              <div className="sub">Mirror status: Active</div>
+            </div>
+            <Switch
+              checked={autoSyncNewGroups}
+              onCheckedChange={handleToggleAutoSync}
+              data-testid="settings-tab-groups-auto-sync-toggle"
+              aria-label="Automatically sync new browser tab groups"
+            />
+          </div>
+        ) : null}
+      </div>
       <div className="block">
         <p className="block-label">Danger zone</p>
         <div className="danger-zone">

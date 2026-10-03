@@ -142,4 +142,27 @@ describe('HighlightQueryService.search', () => {
 
     expect(results).toEqual([]);
   });
+
+  it('reuses in-memory snapshot across search calls within 2s TTL', async () => {
+    const readable = makeReadable([
+      hl({ id: 'h-1', text: 'hello world', url: 'https://example.com/a' }),
+    ]);
+    const svc = new HighlightQueryService(readable);
+
+    // First search calls findAll
+    await svc.search('h');
+    expect(readable.findAll).toHaveBeenCalledTimes(1);
+
+    // Subsequent keystrokes within 2s reuse in-memory cache without calling findAll
+    await svc.search('he');
+    await svc.search('hel');
+    await svc.search('hell');
+    await svc.search('hello');
+    expect(readable.findAll).toHaveBeenCalledTimes(1);
+
+    // Invalidate or let TTL expire -> next call hits readable again
+    svc.invalidateSearchCache();
+    await svc.search('hello');
+    expect(readable.findAll).toHaveBeenCalledTimes(2);
+  });
 });

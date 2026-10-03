@@ -15,6 +15,7 @@ import {
   countActiveFilters,
   DEFAULT_SEARCH_FIELDS,
   REFINE_OPTIONS,
+  toggleGroupFilter,
   toggleRefine,
   toggleSearchField,
   toggleTagFilter,
@@ -29,6 +30,11 @@ export interface AvailableTag {
   n?: number;
 }
 
+export interface AvailableGroup {
+  id: string;
+  name: string;
+}
+
 export interface HighlightSearchBarProps {
   query: string;
   onQueryChange: (query: string) => void;
@@ -40,6 +46,10 @@ export interface HighlightSearchBarProps {
   onTagFiltersChange?: (tags: string[]) => void;
   /** Tags available for the picker; omit or empty hides the Tags section. */
   availableTags?: AvailableTag[];
+  /** Groups available for the picker; omit or empty hides the Groups section. */
+  availableGroups?: AvailableGroup[];
+  groupFilters?: string[];
+  onGroupFiltersChange?: (groupIds: string[]) => void;
   resultCount?: number;
   placeholder?: string;
   disabled?: boolean;
@@ -48,7 +58,7 @@ export interface HighlightSearchBarProps {
   onFilterOpenChange?: (open: boolean) => void;
 }
 
-const DEBOUNCE_MS = 150;
+const DEBOUNCE_MS = 250;
 
 const FIELD_CHIP_LABELS: Record<SearchField, string> = {
   text: 'Text',
@@ -74,6 +84,9 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
     tagFilters = [],
     onTagFiltersChange,
     availableTags,
+    availableGroups,
+    groupFilters = [],
+    onGroupFiltersChange,
     placeholder = 'Search…',
     disabled = false,
     filterOpen: filterOpenProp,
@@ -103,10 +116,13 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
     };
   }, []);
 
-  const activeN = countActiveFilters({ fields, refine, tagFilters });
+  const activeN = countActiveFilters({ fields, refine, tagFilters, groupFilters });
   const hasFilters = activeN > 0;
   const showTagPicker = Boolean(
     availableTags && availableTags.length > 0 && onTagFiltersChange
+  );
+  const showGroupPicker = Boolean(
+    availableGroups && availableGroups.length > 0 && onGroupFiltersChange
   );
   const showRefine = Boolean(onRefineChange);
 
@@ -133,6 +149,7 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
     onFieldsChange([...DEFAULT_SEARCH_FIELDS]);
     onRefineChange?.([]);
     onTagFiltersChange?.([]);
+    onGroupFiltersChange?.([]);
     setTagFind('');
   };
 
@@ -147,6 +164,13 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
   const handleTagToggle = (tag: string): void => {
     onTagFiltersChange?.(toggleTagFilter(tagFilters, tag));
   };
+
+  const handleGroupToggle = (groupId: string): void => {
+    onGroupFiltersChange?.(toggleGroupFilter(groupFilters, groupId));
+  };
+
+  const groupNameOf = (groupId: string): string =>
+    availableGroups?.find((g) => g.id === groupId)?.name ?? groupId;
 
   const popularTags = useMemo(() => {
     if (!availableTags) return [];
@@ -266,6 +290,25 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
           {tagFilters.length > 3 && (
             <span className="filter-active-chip" role="listitem">
               <span>+{tagFilters.length - 3}</span>
+            </span>
+          )}
+          {groupFilters.slice(0, 3).map((id) => (
+            <span key={id} className="filter-active-chip" role="listitem">
+              <span>{groupNameOf(id)}</span>
+              <button
+                type="button"
+                className="x"
+                aria-label={`Remove ${groupNameOf(id)}`}
+                disabled={disabled}
+                onClick={() => handleGroupToggle(id)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {groupFilters.length > 3 && (
+            <span className="filter-active-chip" role="listitem">
+              <span>+{groupFilters.length - 3}</span>
             </span>
           )}
         </div>
@@ -456,6 +499,32 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
                   )}
                 </>
               )}
+            </div>
+          )}
+
+          {showGroupPicker && availableGroups && (
+            <div className="tag-picker">
+              <div className="tag-picker-head">
+                <div className="filter-sec-label">Groups</div>
+                <span className="tag-picker-count">{availableGroups.length}</span>
+              </div>
+              <div className="tag-popular-row" role="group" aria-label="Groups">
+                {availableGroups.map((g) => {
+                  const on = groupFilters.includes(g.id);
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      className={`tag-filter-chip${on ? ' active' : ''}`}
+                      aria-pressed={on}
+                      disabled={disabled}
+                      onClick={() => handleGroupToggle(g.id)}
+                    >
+                      {g.name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 

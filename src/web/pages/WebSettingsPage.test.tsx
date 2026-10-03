@@ -377,4 +377,35 @@ describe('WebSettingsPage', () => {
       expect(sub?.textContent).toMatch(/Synced just now|1 highlight up to date/i);
     });
   });
+
+  it('data tab: renders Browser tab groups section card and toggles mirror status', async () => {
+    localStorage.clear();
+    renderSettings('/settings?tab=data', true);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-testid="settings-section-tab-groups"]')).toBeTruthy();
+    });
+
+    expect(
+      document.querySelector('[data-testid="settings-section-tab-groups-title"]')?.textContent
+    ).toBe('Browser tab groups');
+    expect(
+      document.querySelector('[data-testid="settings-tab-groups-status"]')?.textContent
+    ).toContain('Mirror status: Off');
+
+    const toggle = document.querySelector(
+      '[data-testid="settings-tab-groups-toggle"]'
+    ) as HTMLButtonElement;
+    expect(toggle).toBeTruthy();
+    fireEvent.click(toggle);
+
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-testid="settings-tab-groups-status"]')?.textContent
+      ).toContain('Mirror status: Active');
+    });
+    expect(
+      document.querySelector('[data-testid="settings-tab-groups-auto-sync-row"]')
+    ).toBeTruthy();
+  });
 });

@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildGroupPageUrlSet,
   countGranularSearchResults,
   groupSearchResultsByDomainAndSection,
   groupSearchResultsBySection,
   matchDomainNames,
+  matchGroupNames,
   matchSectionNames,
 } from '@/shared/utils/group-library-search';
+import type { PageGroupItem } from '@/shared/types/page-group';
 
 const hit = (id: string, domain: string, path: string, url?: string) => ({
   id,
@@ -92,5 +95,94 @@ describe('countGranularSearchResults', () => {
     });
     // 1 highlight + 1 pure domain name match (b.com)
     expect(countGranularSearchResults(groups)).toBe(2);
+  });
+});
+
+describe('matchGroupNames', () => {
+  const groups = [
+    { id: 'g1', name: 'Research' },
+    { id: 'g2', name: ' weekend reads ' },
+    { id: 'g3', name: 'Work' },
+  ];
+
+  it('matches name substrings case-insensitively and preserves objects', () => {
+    expect(matchGroupNames(groups, 'res')).toEqual([{ id: 'g1', name: 'Research' }]);
+    expect(matchGroupNames(groups, 'READS')).toEqual([
+      { id: 'g2', name: ' weekend reads ' },
+    ]);
+  });
+
+  it('returns [] for empty/whitespace query', () => {
+    expect(matchGroupNames(groups, '')).toEqual([]);
+    expect(matchGroupNames(groups, '   ')).toEqual([]);
+  });
+});
+
+describe('buildGroupPageUrlSet', () => {
+  const pageItem = (groupId: string, url: string): PageGroupItem => ({
+    id: `${groupId}-${url}`,
+    groupId,
+    kind: 'page',
+    urlNormalized: url,
+    title: null,
+    faviconUrl: null,
+    position: 'a0',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    deletedAt: null,
+  });
+  const domainItem = (
+    groupId: string,
+    hostname: string,
+    includeSubdomains = false
+  ): PageGroupItem => ({
+    id: `${groupId}-${hostname}`,
+    groupId,
+    kind: 'domain',
+    hostname,
+    includeSubdomains,
+    position: 'a0',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    deletedAt: null,
+  });
+
+  it('returns null when no groups are selected', () => {
+    expect(buildGroupPageUrlSet([pageItem('g1', 'https://a.com/')], [], [])).toBeNull();
+  });
+
+  it('resolves explicit page items by normalized URL', () => {
+    const set = buildGroupPageUrlSet(
+      [pageItem('g1', 'https://a.com/docs'), pageItem('g2', 'https://b.com/')],
+      [],
+      ['g1']
+    );
+    expect(set).not.toBeNull();
+    expect([...set!]).toEqual(['https://a.com/docs']);
+  });
+
+  it('expands domain rules over known pages and unions groups', () => {
+    const set = buildGroupPageUrlSet(
+      [domainItem('g1', 'a.com', true), pageItem('g2', 'https://b.com/x')],
+      [
+        { urlNormalized: 'https://docs.a.com/guide' },
+        { urlNormalized: 'https://other.com/' },
+      ],
+      ['g1', 'g2']
+    );
+    expect(set).not.toBeNull();
+    expect([...set!].sort()).toEqual(
+      ['https://b.com/x', 'https://docs.a.com/guide'].sort()
+    );
+  });
+
+  it('skips tombstoned items', () => {
+    const tombstoned = {
+      ...pageItem('g1', 'https://a.com/gone'),
+      deletedAt: '2026-02-01T00:00:00.000Z',
+    };
+    const set = buildGroupPageUrlSet([tombstoned], [], ['g1']);
+    expect(set).not.toBeNull();
+    expect(set!.size).toBe(0);
   });
 });

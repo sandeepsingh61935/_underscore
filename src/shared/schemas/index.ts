@@ -17,6 +17,21 @@ export {
   type ColorRole,
 } from './highlight-schema';
 
+// Page group schemas
+export {
+  GroupColorSchema,
+  GroupNameSchema,
+  FaviconUrlSchema,
+  BoundBrowserSchema,
+  PageGroupSchema,
+  PageGroupItemSchema,
+  GroupCapsSchema,
+  type GroupColorParsed,
+  type PageGroupParsed,
+  type PageGroupItemParsed,
+  type GroupCapsParsed,
+} from './page-group-schema';
+
 // Validation utilities
 export {
   validate,

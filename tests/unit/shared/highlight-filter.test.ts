@@ -6,8 +6,10 @@ import {
   fieldsAreRestricted,
   filterHighlightsByRefineAndTags,
   isDefaultFilterState,
+  matchesGroupUrl,
   matchesRefine,
   matchesTagFilters,
+  toggleGroupFilter,
   toggleRefine,
   toggleSearchField,
   toggleTagFilter,
@@ -140,6 +142,54 @@ describe('highlight-filter model', () => {
         'domain',
       ]);
       expect(toggleSearchField(['text'], 'notes')).toEqual(['text', 'notes']);
+    });
+
+    it('toggleGroupFilter adds and removes group ids exactly', () => {
+      expect(toggleGroupFilter([], 'g1')).toEqual(['g1']);
+      expect(toggleGroupFilter(['g1'], 'g1')).toEqual([]);
+      expect(toggleGroupFilter(['g1'], 'g2')).toEqual(['g1', 'g2']);
+    });
+  });
+
+  describe('group filter', () => {
+    it('defaults to no group filters and counts each selected group', () => {
+      expect(defaultLibraryFilterState().groupFilters).toEqual([]);
+      expect(
+        countActiveFilters({
+          fields: ['text', 'notes', 'tags', 'domain'],
+          refine: [],
+          tagFilters: [],
+          groupFilters: ['g1', 'g2'],
+        })
+      ).toBe(2);
+    });
+
+    it('matchesGroupUrl passes everything when no set is given', () => {
+      expect(matchesGroupUrl(item({ url: 'https://a.com/' }), null)).toBe(true);
+      expect(matchesGroupUrl(item({ url: 'https://a.com/' }), undefined)).toBe(true);
+    });
+
+    it('matchesGroupUrl checks normalized membership', () => {
+      const set = new Set(['https://a.com/docs']);
+      expect(matchesGroupUrl(item({ url: 'https://a.com/docs#frag' }), set)).toBe(true);
+      expect(matchesGroupUrl(item({ url: 'https://b.com/' }), set)).toBe(false);
+      expect(matchesGroupUrl(item({ url: 'https://a.com/docs' }), new Set())).toBe(
+        false
+      );
+      expect(matchesGroupUrl(item(), set)).toBe(false);
+    });
+
+    it('filterHighlightsByRefineAndTags ANDs the group set with refine/tags', () => {
+      const set = new Set(['https://a.com/']);
+      const a = item({ url: 'https://a.com/', notes: 'n', tags: ['css'] });
+      const b = item({ url: 'https://b.com/', notes: 'n', tags: ['css'] });
+      const c = item({ url: 'https://a.com/', notes: '', tags: ['css'] });
+      const out = filterHighlightsByRefineAndTags([a, b, c], {
+        refine: ['has_notes'],
+        tagFilters: ['css'],
+        groupUrlSet: set,
+      });
+      expect(out).toEqual([a]);
     });
   });
 });

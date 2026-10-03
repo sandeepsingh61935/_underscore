@@ -451,4 +451,24 @@ describe('PhoneLibrary', () => {
     // Page 1 quotes should now be hidden
     expect(screen.queryByText('Quote number 15')).toBeNull();
   });
+
+  it('renders clean domain list without a groups segmented control', () => {
+    render(
+      <PhoneLibrary
+        highlights={HIGHLIGHTS}
+        query=""
+        onQueryChange={() => undefined}
+        domain={null}
+        highlightId={null}
+        onOpenDomain={() => undefined}
+        onOpenHighlight={() => undefined}
+        clientKind="phone"
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Domains' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Groups' })).toBeNull();
+    expect(screen.getByText('example.com')).toBeInTheDocument();
+    expect(screen.getByText('other.org')).toBeInTheDocument();
+  });
 });

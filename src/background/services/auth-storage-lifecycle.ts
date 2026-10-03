@@ -1,6 +1,9 @@
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
-import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
+import type {
+  GroupSyncCursor,
+  LibrarySyncCursor,
+} from '@/background/services/library-sync-cursor';
 import type { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
 import { DEFAULT_MODE, MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
@@ -35,6 +38,10 @@ export interface AuthStorageLifecycleDeps {
   cloudHydration?: Pick<ICloudHydrationService, 'hydrate'>;
   syncCursor?: Pick<LibrarySyncCursor, 'clear'>;
   echoTracker?: Pick<LocalWriteEchoTracker, 'clear'>;
+  /** Pro Page Groups store wipe on sign-out (plan Phase 2 Task 2.3). */
+  proGroupStore?: { clearGroups(): Promise<void> };
+  /** Separate groups incremental-pull cursor (Task 2.3). */
+  groupSyncCursor?: Pick<GroupSyncCursor, 'clear'>;
   /** Persist Guest mode on sign-out (defaults to chrome.storage.local). */
   persistGuestMode?: () => Promise<void>;
 }
@@ -55,6 +62,8 @@ export async function handleAuthStorageEvent(
     cloudHydration,
     syncCursor,
     echoTracker,
+    proGroupStore,
+    groupSyncCursor,
     persistGuestMode,
   } = deps;
 
@@ -87,7 +96,9 @@ export async function handleAuthStorageEvent(
 
   await scopedRepository.wipeProLocal();
   await scopedTagRepository?.wipeProLocal();
+  await proGroupStore?.clearGroups();
   await syncCursor?.clear();
+  await groupSyncCursor?.clear();
   echoTracker?.clear();
   await scopedRepository.activateScope('basic');
   scopedTagRepository?.activateScope('basic');

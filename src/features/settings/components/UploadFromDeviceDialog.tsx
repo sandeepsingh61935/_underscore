@@ -11,6 +11,8 @@ export interface UploadFromDeviceDialogProps {
   open: boolean;
   email: string | null;
   pendingCount: number;
+  pendingGroupCount?: number;
+  pendingGroupItemCount?: number;
   isUploading: boolean;
   error: string | null;
   onClose: () => void;
@@ -32,13 +34,33 @@ export function UploadFromDeviceDialog({
   open,
   email,
   pendingCount,
+  pendingGroupCount,
+  pendingGroupItemCount,
   isUploading,
   error,
   onClose,
   onConfirm,
 }: UploadFromDeviceDialogProps): React.ReactElement {
   const account = email ?? 'this account';
-  const noun = pendingCount === 1 ? 'highlight' : 'highlights';
+  const gCount = pendingGroupCount ?? 0;
+  const iCount = pendingGroupItemCount ?? 0;
+
+  let message: string;
+  if (pendingCount > 0 && gCount > 0) {
+    const hNoun = pendingCount === 1 ? 'highlight' : 'highlights';
+    const gNoun = gCount === 1 ? 'group' : 'groups';
+    const iNoun = iCount === 1 ? 'item' : 'items';
+    message = `This device has ${pendingCount} guest ${hNoun} and ${gCount} ${gNoun} (${iCount} ${iNoun}) not in ${account}. Add them to this account?`;
+  } else if (gCount > 0) {
+    const gNoun = gCount === 1 ? 'group' : 'groups';
+    const iNoun = iCount === 1 ? 'item' : 'items';
+    message = `This device has ${gCount} guest ${gNoun} (${iCount} ${iNoun}) not in ${account}. Add them to this account?`;
+  } else {
+    const noun = pendingCount === 1 ? 'highlight' : 'highlights';
+    message = `This device has ${pendingCount} guest ${noun} not in ${account}. Add them to this account?`;
+  }
+
+  const canConfirm = pendingCount > 0 || gCount > 0;
 
   return (
     <Dialog
@@ -68,7 +90,7 @@ export function UploadFromDeviceDialog({
               color: 'var(--paper)',
             }}
             onClick={onConfirm}
-            disabled={isUploading || pendingCount === 0}
+            disabled={isUploading || !canConfirm}
             data-testid="device-upload-confirm"
           >
             {isUploading ? 'Uploading…' : 'Add'}
@@ -85,8 +107,7 @@ export function UploadFromDeviceDialog({
           lineHeight: 1.45,
         }}
       >
-        This device has {pendingCount} guest {noun} not in {account}. Add them to this
-        account?
+        {message}
       </p>
       {error ? (
         <p

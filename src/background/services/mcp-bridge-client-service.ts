@@ -68,7 +68,12 @@ export class McpBridgeClientService {
         void this.syncFromStorage();
       }
     };
-    browser.storage.onChanged.addListener(this.storageListener);
+    const storageOnChanged =
+      (typeof browser !== 'undefined' && browser.storage?.onChanged) ||
+      (typeof chrome !== 'undefined' && (chrome as any).storage?.onChanged);
+    if (typeof storageOnChanged?.addListener === 'function') {
+      storageOnChanged.addListener(this.storageListener);
+    }
 
     // Chrome service workers expose onSuspend; Firefox MV3 event pages may not.
     const runtimeWithSuspend = browser.runtime as typeof browser.runtime & {
@@ -95,7 +100,12 @@ export class McpBridgeClientService {
 
   stop(): void {
     if (this.storageListener) {
-      browser.storage.onChanged.removeListener(this.storageListener);
+      const storageOnChanged =
+        (typeof browser !== 'undefined' && browser.storage?.onChanged) ||
+        (typeof chrome !== 'undefined' && (chrome as any).storage?.onChanged);
+      if (typeof storageOnChanged?.removeListener === 'function') {
+        storageOnChanged.removeListener(this.storageListener);
+      }
       this.storageListener = null;
     }
     if (this.suspendListener) {

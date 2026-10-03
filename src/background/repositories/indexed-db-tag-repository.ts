@@ -3,7 +3,8 @@
  * @description Local IndexedDB implementation of ITagRepository.
  *
  * Shares the highlight database (basic / pro) and adds `tags` +
- * `highlight_tags` object stores at DB version 2.
+ * `highlight_tags` object stores at DB version 2 (`page_groups` +
+ * `page_group_items` at version 3, via the shared upgrade helper).
  */
 
 import { openDB, type IDBPDatabase } from 'idb';
@@ -37,7 +38,9 @@ export class IndexedDBTagRepository implements ITagRepository {
   constructor(logger: ILogger, dbName: string) {
     this.logger = logger;
     this.dbPromise = openDB(dbName, HIGHLIGHT_DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, _oldVersion, _newVersion, _transaction) {
+        // Shared upgrade path: creates highlight + tag + page-group stores
+        // at v3 regardless of which repository opens the DB first.
         upgradeHighlightDatabase(db);
       },
     });

@@ -124,9 +124,6 @@ export class SyncQueue implements ISyncQueue {
    * 1. DELETE events (must be processed first)
    * 2. UPDATE events
    * 3. CREATE events
-   * 4. COLLECTION_DELETE
-   * 5. COLLECTION_UPDATE
-   * 6. COLLECTION_CREATE
    */
   private calculatePriority(event: SyncEvent): number {
     switch (event.type) {
@@ -136,12 +133,6 @@ export class SyncQueue implements ISyncQueue {
         return 2;
       case SyncEventType.HIGHLIGHT_CREATED:
         return 3;
-      case SyncEventType.COLLECTION_DELETED:
-        return 4;
-      case SyncEventType.COLLECTION_UPDATED:
-        return 5;
-      case SyncEventType.COLLECTION_CREATED:
-        return 6;
       default:
         return 10;
     }

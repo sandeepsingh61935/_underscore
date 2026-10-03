@@ -9,7 +9,9 @@ export interface LibrarySearchGroupHeaderProps {
   /** e.g. "3 matches" or "Domain name match" */
   meta: string;
   onOpen: () => void;
-  level: 'domain' | 'section';
+  level: 'domain' | 'section' | 'group';
+  /** Optional leading adornment (e.g. group color swatch). */
+  leading?: React.ReactNode;
 }
 
 export function LibrarySearchGroupHeader({
@@ -17,7 +19,9 @@ export function LibrarySearchGroupHeader({
   meta,
   onOpen,
   level,
+  leading,
 }: LibrarySearchGroupHeaderProps): React.ReactElement {
+  const isTopLevel = level !== 'section';
   return (
     <button
       type="button"
@@ -34,15 +38,19 @@ export function LibrarySearchGroupHeader({
         justifyContent: 'space-between',
         gap: 12,
         width: '100%',
-        padding: level === 'domain' ? '12px 16px 6px' : '10px 16px 4px',
-        borderTop: level === 'domain' ? '1px solid var(--rule-soft)' : undefined,
-        background: level === 'domain' ? 'var(--paper-2)' : 'transparent',
+        padding: level === 'domain' || level === 'group' ? '12px 16px 6px' : '10px 16px 4px',
+        borderTop:
+          level === 'domain' || level === 'group'
+            ? '1px solid var(--rule-soft)'
+            : undefined,
+        background: level === 'domain' || level === 'group' ? 'var(--paper-2)' : 'transparent',
       }}
     >
+      {leading}
       <span
-        className={level === 'domain' ? 'u-serif' : 'u-mono'}
+        className={isTopLevel ? 'u-serif' : 'u-mono'}
         style={{
-          fontSize: level === 'domain' ? 'var(--step-1)' : 'var(--step--2)',
+          fontSize: isTopLevel ? 'var(--step-1)' : 'var(--step--2)',
           color: 'var(--ink)',
           letterSpacing: level === 'section' ? '0.04em' : '-0.01em',
           minWidth: 0,

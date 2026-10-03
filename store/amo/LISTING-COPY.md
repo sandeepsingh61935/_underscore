@@ -63,6 +63,11 @@ PERMISSIONS (WHAT AND WHY)
 • AI provider sites (optional) — Only if you connect your own API keys
   (OpenAI, Anthropic, Gemini, etc.).
 
+• Browser tab groups (optional) — Only when you choose to turn on "Browser tab groups"
+  sync in Settings. Mirrors tab groups in your browser with Underscore groups and lets
+  you open saved groups as tab groups. Ungrouped open tabs and private windows are never
+  sent to our servers.
+
 • localhost (optional) — Only if you enable local Ollama or a local agent bridge.
 
 Guest highlighting works with page access + on-device storage alone.

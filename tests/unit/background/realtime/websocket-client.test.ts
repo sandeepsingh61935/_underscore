@@ -63,12 +63,33 @@ describe('WebSocketClient', () => {
       await wsClient.subscribe('user-123');
 
       expect(mockSupabase.channel).toHaveBeenCalledWith('highlights-sync');
+      expect(mockSupabase.channel).toHaveBeenCalledWith('groups-sync');
       expect(mockChannel.on).toHaveBeenCalledWith(
         'postgres_changes',
         expect.objectContaining({
           event: '*',
           schema: 'public',
           table: 'highlights',
+          filter: 'user_id=eq.user-123',
+        }),
+        expect.any(Function)
+      );
+      expect(mockChannel.on).toHaveBeenCalledWith(
+        'postgres_changes',
+        expect.objectContaining({
+          event: '*',
+          schema: 'public',
+          table: 'page_groups',
+          filter: 'user_id=eq.user-123',
+        }),
+        expect.any(Function)
+      );
+      expect(mockChannel.on).toHaveBeenCalledWith(
+        'postgres_changes',
+        expect.objectContaining({
+          event: '*',
+          schema: 'public',
+          table: 'page_group_items',
           filter: 'user_id=eq.user-123',
         }),
         expect.any(Function)
@@ -91,8 +112,9 @@ describe('WebSocketClient', () => {
       await wsClient.subscribe('user-1');
       await wsClient.subscribe('user-2');
 
-      expect(mockChannel.unsubscribe).toHaveBeenCalled();
-      expect(mockSupabase.channel).toHaveBeenCalledTimes(2);
+      // Both the highlights and the groups channel unsubscribe + resubscribe.
+      expect(mockChannel.unsubscribe).toHaveBeenCalledTimes(2);
+      expect(mockSupabase.channel).toHaveBeenCalledTimes(4);
     });
 
     it('should handle subscription errors', async () => {

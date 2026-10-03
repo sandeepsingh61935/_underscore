@@ -8,6 +8,7 @@ import '@testing-library/jest-dom';
 import 'fake-indexeddb/auto';
 
 // Augment global type for browser API
+(global as any).defineBackground = (def: any) => def;
 declare global {
   var browser: {
     storage: {
@@ -16,6 +17,10 @@ declare global {
         get: (keys?: string | string[]) => Promise<Record<string, unknown>>;
         set: (items: Record<string, unknown>) => Promise<void>;
         remove: (keys: string | string[]) => Promise<void>;
+      };
+      onChanged?: {
+        addListener: (callback: (changes: Record<string, unknown>, areaName: string) => void) => void;
+        removeListener: (callback: (changes: Record<string, unknown>, areaName: string) => void) => void;
       };
     };
     runtime: {
@@ -101,6 +106,10 @@ global.browser = {
       clear: vi.fn().mockImplementation(async () => {
         storageData.clear();
       }),
+    },
+    onChanged: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
     },
   },
   runtime: {

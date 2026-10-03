@@ -12,7 +12,7 @@ import { applyWebPrefs, readWebPrefs } from '@/web/lib/webPrefs';
 import { takeOauthReturnTo } from '@/web/routing/oauth-return-to';
 import { resolveSafeReturnTo } from '@/web/routing/safe-return-to';
 
-type ProductRoute = 'home' | 'library' | 'settings';
+type ProductRoute = 'home' | 'library' | 'groups' | 'settings';
 
 const ROUTE_META: Record<ProductRoute, { label: string; path: string }> = {
   home: {
@@ -23,6 +23,10 @@ const ROUTE_META: Record<ProductRoute, { label: string; path: string }> = {
     label: 'Library',
     path: '/library',
   },
+  groups: {
+    label: 'Groups',
+    path: '/groups',
+  },
   settings: {
     label: 'Settings',
     path: '/settings',
@@ -30,6 +34,7 @@ const ROUTE_META: Record<ProductRoute, { label: string; path: string }> = {
 };
 
 function routeFromPathname(pathname: string): ProductRoute {
+  if (pathname.startsWith('/groups')) return 'groups';
   if (pathname.startsWith('/library')) return 'library';
   if (pathname.startsWith('/settings')) return 'settings';
   return 'home';
@@ -73,6 +78,20 @@ const IconLibrary = () => (
   </svg>
 );
 
+const IconGroups = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.75"
+    aria-hidden="true"
+  >
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
 const IconSettings = () => (
   <svg
     width="18"
@@ -95,6 +114,7 @@ const NAV_ITEMS: Array<{
 }> = [
   { route: 'home', odId: 'nav-home', icon: <IconHome /> },
   { route: 'library', odId: 'nav-library', icon: <IconLibrary /> },
+  { route: 'groups', odId: 'nav-groups', icon: <IconGroups /> },
   { route: 'settings', odId: 'nav-settings', icon: <IconSettings /> },
 ];
 
@@ -140,8 +160,8 @@ export function WebAppShell(): React.ReactElement {
 
   const activeRoute = routeFromPathname(location.pathname);
 
-  /** Phone is a full-bleed stack. Desktop library stays flush; home and settings keep the page inset. */
-  const workspaceFlush = phoneLayout || activeRoute === 'library';
+  /** Phone is a full-bleed stack. Desktop library and groups stay flush; home and settings keep the page inset. */
+  const workspaceFlush = phoneLayout || activeRoute === 'library' || activeRoute === 'groups';
 
   const displayName = isAuthenticated
     ? user?.displayName || user?.email || 'Signed in'

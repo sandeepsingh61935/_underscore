@@ -38,7 +38,9 @@ export class IndexedDBHighlightRepository implements IHighlightRepository {
     private readonly dbName: string = BASIC_HIGHLIGHT_DB_NAME
   ) {
     this.dbPromise = openDB(this.dbName, HIGHLIGHT_DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, _oldVersion, _newVersion, _transaction) {
+        // Shared upgrade path: creates highlight + tag + page-group stores
+        // at v3 regardless of which repository opens the DB first.
         upgradeHighlightDatabase(db);
       },
     });

@@ -21,7 +21,7 @@ export interface SyncEvent {
   type: SyncEventType;
 
   /** Event payload data */
-  data: HighlightDataV2 | CollectionData | DeleteData;
+  data: HighlightDataV2 | DeleteData;
 
   /** Unix timestamp (milliseconds) when event occurred */
   timestamp: number;
@@ -43,9 +43,6 @@ export enum SyncEventType {
   HIGHLIGHT_CREATED = 'highlight.created',
   HIGHLIGHT_UPDATED = 'highlight.updated',
   HIGHLIGHT_DELETED = 'highlight.deleted',
-  COLLECTION_CREATED = 'collection.created',
-  COLLECTION_UPDATED = 'collection.updated',
-  COLLECTION_DELETED = 'collection.deleted',
 }
 
 /**
@@ -53,26 +50,6 @@ export enum SyncEventType {
  * Maps device_id to logical clock value
  */
 export type VectorClock = Record<string, number>;
-
-/**
- * Collection metadata
- */
-export interface CollectionData {
-  /** Collection UUID */
-  id: string;
-
-  /** User-defined collection name */
-  name: string;
-
-  /** Optional description */
-  description?: string;
-
-  /** Creation timestamp */
-  created_at: Date;
-
-  /** Last update timestamp */
-  updated_at: Date;
-}
 
 /**
  * Delete event data (only contains ID)
@@ -111,29 +88,6 @@ export interface SyncConflict {
 
   /** Remote event that conflicts */
   remote_event: SyncEvent;
-}
-
-/**
- * Collection metadata
- */
-export interface Collection {
-  /** Collection UUID */
-  id: string;
-
-  /** User-defined name */
-  name: string;
-
-  /** Optional description */
-  description?: string;
-
-  /** Number of highlights in collection */
-  highlight_count: number;
-
-  /** Creation timestamp */
-  created_at: Date;
-
-  /** Last update timestamp */
-  updated_at: Date;
 }
 
 /**
@@ -217,27 +171,4 @@ export interface IAPIClient {
    * @throws {NetworkError} If network request fails
    */
   pullEvents(since: number): Promise<SyncEvent[]>;
-
-  // ==================== Collection Operations ====================
-
-  /**
-   * Create a new collection
-   *
-   * @param name - Collection name (1-100 characters)
-   * @param description - Optional description (max 500 characters)
-   * @returns Created collection with metadata
-   * @throws {AuthenticationError} If user not authenticated
-   * @throws {ValidationError} If name is invalid
-   * @throws {NetworkError} If network request fails
-   */
-  createCollection(name: string, description?: string): Promise<Collection>;
-
-  /**
-   * Get all collections for current user
-   *
-   * @returns Array of collections (empty if none)
-   * @throws {AuthenticationError} If user not authenticated
-   * @throws {NetworkError} If network request fails
-   */
-  getCollections(): Promise<Collection[]>;
 }

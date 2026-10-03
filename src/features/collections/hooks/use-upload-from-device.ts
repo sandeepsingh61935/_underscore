@@ -27,6 +27,11 @@ export function formatUploadSubtitle(result: DeviceLibraryUploadResult): string 
   if (result.copiedCount > 0) {
     parts.push(`${result.copiedCount} uploaded`);
   }
+  if (result.groupsCopiedCount > 0) {
+    parts.push(
+      `${result.groupsCopiedCount} ${result.groupsCopiedCount === 1 ? 'group' : 'groups'}`
+    );
+  }
   if (result.skippedCount > 0) {
     parts.push(`${result.skippedCount} already in account`);
   }
@@ -48,6 +53,8 @@ function jobToResult(job: LibraryTransferJob): DeviceLibraryUploadResult {
     skippedCount: job.skippedCount ?? 0,
     failedCount: job.failedCount ?? 0,
     tagsCopiedCount: job.tagsCopiedCount ?? 0,
+    groupsCopiedCount: job.groupsCopiedCount ?? 0,
+    groupItemsCopiedCount: job.groupItemsCopiedCount ?? 0,
     queueFlushed: true,
     error: job.error,
   };

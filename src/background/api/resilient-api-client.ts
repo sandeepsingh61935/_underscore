@@ -9,7 +9,6 @@ import type {
   IAPIClient,
   SyncEvent,
   PushResult,
-  Collection,
 } from './interfaces/i-api-client';
 
 import type { ILogger } from '@/shared/interfaces/i-logger';
@@ -120,18 +119,6 @@ export class ResilientAPIClient implements IAPIClient {
 
   async pullEvents(since: number): Promise<SyncEvent[]> {
     return this.executeWithResilience(() => this.inner.pullEvents(since));
-  }
-
-  // ==================== Collection Operations ====================
-
-  async createCollection(name: string, description?: string): Promise<Collection> {
-    return this.executeWithResilience(() =>
-      this.inner.createCollection(name, description)
-    );
-  }
-
-  async getCollections(): Promise<Collection[]> {
-    return this.executeWithResilience(() => this.inner.getCollections());
   }
 
   // ==================== Resilience Logic ====================

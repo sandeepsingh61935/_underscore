@@ -32,8 +32,12 @@ import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { resolveSettingsActionGates } from '@/shared/settings/settings-topic-ia';
 import { deleteLibraryCopy, signOutCopy } from '@/shared/utils/confirm-dialog-copy';
 import { featureGateSubtitle } from '@/shared/utils/feature-gate-copy';
+import { GroupImportPicker } from '@/features/groups/components/GroupImportPicker';
+import { useBrowserTabSync } from '@/features/groups/hooks/useBrowserTabSync';
 import { Spinner } from '@/ui-system/components/primitives/Spinner';
+import { Switch } from '@/ui-system/components/primitives/Switch';
 import { useMcpGate, useModeFeature } from '@/ui-system/hooks/useModeFeature';
+import { browser } from 'wxt/browser';
 
 export interface SettingsPageProps {
   onBack?: () => void;
@@ -104,6 +108,34 @@ export function SettingsPage({
   const [connectOpen, setConnectOpen] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [legalDoc, setLegalDoc] = useState<'privacy' | 'terms' | 'help' | null>(null);
+  const tabSync = useBrowserTabSync();
+  const [importPickerOpen, setImportPickerOpen] = useState(false);
+
+  const handleToggleTabSync = async (checked: boolean) => {
+    if (checked) {
+      const granted = await tabSync.enableSync();
+      if (granted) {
+        try {
+          const tabGroupsApi =
+            (browser as any)?.tabGroups ?? (globalThis as any)?.chrome?.tabGroups;
+          if (tabGroupsApi?.query) {
+            const res = tabGroupsApi.query({});
+            const groups =
+              res && typeof res.then === 'function'
+                ? await res
+                : await new Promise((resolve) => tabGroupsApi.query({}, resolve));
+            if (Array.isArray(groups) && groups.length > 0) {
+              setImportPickerOpen(true);
+            }
+          }
+        } catch {
+          // Ignore
+        }
+      }
+    } else {
+      await tabSync.disableSync();
+    }
+  };
   const isAuthenticated = Boolean(user);
   const syncGate = useModeFeature('sync', isAuthenticated);
   const mcpGate = useMcpGate(
@@ -585,6 +617,100 @@ export function SettingsPage({
           </div>
         </div>
 
+        {/* Browser tab groups */}
+        {tabSync.isSupported ? (
+          <div
+            data-testid="settings-section-tab-groups"
+            data-od-id="settings-section-tab-groups"
+          >
+            <div
+              className="u-caps"
+              data-testid="settings-section-tab-groups-title"
+              style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+            >
+              Browser tab groups
+            </div>
+            <div
+              className="row"
+              style={{ cursor: 'default' }}
+              data-od-id="settings-tab-groups-row"
+              data-testid="settings-tab-groups-row"
+            >
+              <div>
+                <div className="title">Browser tab groups</div>
+                <div className="sub">
+                  Mirror tab groups in your browser with Underscore groups. Incognito is never included.
+                </div>
+              </div>
+              <span className="row-end">
+                <Switch
+                  checked={tabSync.isEnabled}
+                  onCheckedChange={(checked) => {
+                    void handleToggleTabSync(checked);
+                  }}
+                  data-testid="settings-tab-groups-toggle"
+                  aria-label="Browser tab groups"
+                />
+              </span>
+            </div>
+            {tabSync.permissionDenied && (
+              <div
+                data-testid="settings-tab-groups-permission-note"
+                style={{
+                  padding: '4px 16px 10px',
+                  fontSize: 'var(--step--1)',
+                  color: 'var(--ink-2)',
+                }}
+              >
+                Permission required to sync browser tab groups
+              </div>
+            )}
+            {tabSync.isEnabled && (
+              <>
+                <div
+                  className="row"
+                  style={{ cursor: 'default' }}
+                  data-od-id="settings-tab-groups-auto-sync-row"
+                  data-testid="settings-tab-groups-auto-sync-row"
+                >
+                  <div>
+                    <div className="title">Automatically sync new browser tab groups</div>
+                  </div>
+                  <span className="row-end">
+                    <Switch
+                      checked={tabSync.autoSyncNewGroups}
+                      onCheckedChange={(checked) => {
+                        void tabSync.setAutoSyncNewGroups(checked);
+                      }}
+                      data-testid="settings-tab-groups-auto-sync-toggle"
+                      aria-label="Automatically sync new browser tab groups"
+                    />
+                  </span>
+                </div>
+                <div
+                  className="row"
+                  style={{ cursor: 'default' }}
+                  data-od-id="settings-tab-groups-import-row"
+                >
+                  <div>
+                    <div className="title">Import tab groups</div>
+                  </div>
+                  <span className="row-end">
+                    <button
+                      type="button"
+                      className="btn ghost sm"
+                      data-testid="settings-tab-groups-import-btn"
+                      onClick={() => setImportPickerOpen(true)}
+                    >
+                      Import…
+                    </button>
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        ) : null}
+
         {/* Integrations */}
         <div
           data-testid="settings-section-integrations"
@@ -732,6 +858,11 @@ export function SettingsPage({
           />
         );
       })()}
+
+      <GroupImportPicker
+        open={importPickerOpen}
+        onClose={() => setImportPickerOpen(false)}
+      />
     </div>
   );
 }

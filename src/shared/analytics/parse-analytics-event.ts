@@ -2,13 +2,38 @@ export const ANALYTICS_EVENT_NAMES = [
   'library_open',
   'highlight_open_source',
   'library_search',
+  'group_created',
+  'group_deleted',
+  'group_item_added',
+  'browser_sync_enabled',
+  'browser_sync_disabled',
+  'group_opened_in_browser',
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENT_NAMES)[number];
 
 const NAME_SET = new Set<string>(ANALYTICS_EVENT_NAMES);
-const PROP_ALLOW = new Set(['client', 'result_count', 'rank', 'reason']);
-const PROP_DENY = new Set(['quote', 'q', 'query', 'email', 'text']);
+const PROP_ALLOW = new Set([
+  'client',
+  'result_count',
+  'rank',
+  'reason',
+  'kind',
+  'tabCount',
+  'tab_count',
+  'browser',
+]);
+const PROP_DENY = new Set([
+  'quote',
+  'q',
+  'query',
+  'email',
+  'text',
+  'url',
+  'hostname',
+  'name',
+  'title',
+]);
 
 export function parseAnalyticsEvent(raw: unknown):
   | {

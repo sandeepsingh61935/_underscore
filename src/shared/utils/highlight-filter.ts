@@ -7,6 +7,7 @@
 
 import type { SearchField } from '@/shared/utils/highlight-search';
 import { USER_SEARCH_FIELDS } from '@/shared/utils/highlight-search';
+import { normalizePageUrl } from '@/shared/utils/normalize-page-url';
 
 export type RefineFilter = 'has_notes' | 'needs_note' | 'has_tags' | 'untagged';
 
@@ -22,12 +23,15 @@ export const DEFAULT_SEARCH_FIELDS: SearchField[] = [...USER_SEARCH_FIELDS];
 export interface FilterableHighlight {
   notes?: string;
   tags?: string[];
+  url?: string;
 }
 
 export interface LibraryFilterState {
   fields: SearchField[];
   refine: RefineFilter[];
   tagFilters: string[];
+  /** Selected page-group ids; empty means "no group restriction". */
+  groupFilters?: string[];
 }
 
 /** True when notes is a non-empty string after trim. */
@@ -55,10 +59,13 @@ export function fieldsAreRestricted(fields: SearchField[]): boolean {
  * - Restricted field scope counts as 1
  * - Each refine chip counts as 1
  * - Each selected tag filter counts as 1
+ * - Each selected group filter counts as 1
  */
 export function countActiveFilters(state: LibraryFilterState): number {
   const fieldUnit = fieldsAreRestricted(state.fields) ? 1 : 0;
-  return fieldUnit + state.refine.length + state.tagFilters.length;
+  return (
+    fieldUnit + state.refine.length + state.tagFilters.length + (state.groupFilters?.length ?? 0)
+  );
 }
 
 export function isDefaultFilterState(state: LibraryFilterState): boolean {
@@ -70,6 +77,7 @@ export function defaultLibraryFilterState(): LibraryFilterState {
     fields: [...DEFAULT_SEARCH_FIELDS],
     refine: [],
     tagFilters: [],
+    groupFilters: [],
   };
 }
 
@@ -118,19 +126,43 @@ export function matchesTagFilters(
 }
 
 /**
- * Apply refine + tag filters. Preserves input order.
+ * Group filter: item must live on one of the group's resolved pages.
+ * A null/undefined set means "no group restriction" (matches all); an
+ * empty set matches nothing (selection resolves to zero pages).
+ */
+export function matchesGroupUrl(
+  item: FilterableHighlight,
+  groupUrlSet: Set<string> | null | undefined
+): boolean {
+  if (groupUrlSet == null) return true;
+  const url = (item.url ?? '').trim();
+  if (!url) return false;
+  return groupUrlSet.has(normalizePageUrl(url));
+}
+
+/**
+ * Apply refine + tag + group filters. Preserves input order.
  * Does not apply text query or field scope — callers combine with search.
  */
 export function filterHighlightsByRefineAndTags<T extends FilterableHighlight>(
   items: T[],
-  options: { refine?: RefineFilter[]; tagFilters?: string[] }
+  options: {
+    refine?: RefineFilter[];
+    tagFilters?: string[];
+    groupUrlSet?: Set<string> | null;
+  }
 ): T[] {
   const refine = options.refine ?? [];
   const tagFilters = options.tagFilters ?? [];
-  if (refine.length === 0 && tagFilters.length === 0) return items;
+  const groupUrlSet = options.groupUrlSet ?? null;
+  if (refine.length === 0 && tagFilters.length === 0 && groupUrlSet == null)
+    return items;
 
   return items.filter(
-    (item) => matchesRefine(item, refine) && matchesTagFilters(item, tagFilters)
+    (item) =>
+      matchesRefine(item, refine) &&
+      matchesTagFilters(item, tagFilters) &&
+      matchesGroupUrl(item, groupUrlSet)
   );
 }
 
@@ -157,6 +189,14 @@ export function toggleTagFilter(current: string[], tag: string): string[] {
     return current.filter((t) => t.toLowerCase() !== lower);
   }
   return [...current, tag];
+}
+
+/** Toggle a page-group id in the selected set (ids compare exactly). */
+export function toggleGroupFilter(current: string[], groupId: string): string[] {
+  if (current.includes(groupId)) {
+    return current.filter((id) => id !== groupId);
+  }
+  return [...current, groupId];
 }
 
 /**

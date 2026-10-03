@@ -270,6 +270,63 @@ describe('searchHighlights', () => {
     expect(results).toHaveLength(1);
     expect(results[0]?.matchedFields).toEqual(['text']);
   });
+
+  describe('multi-word query tokenization', () => {
+    it('matches when all tokens match within the same field', () => {
+      const items = [
+        makeHighlight({
+          id: 'h1',
+          text: 'The quick brown fox jumps',
+          notes: undefined,
+          tags: undefined,
+        }),
+        makeHighlight({
+          id: 'h2',
+          text: 'The slow brown turtle',
+          notes: undefined,
+          tags: undefined,
+        }),
+      ];
+      const results = searchHighlights(items, 'quick fox');
+      expect(results.map((r) => r.highlight.id)).toEqual(['h1']);
+      expect(results[0]?.matchedFields).toEqual(['text']);
+    });
+
+    it('matches when tokens match across different active fields', () => {
+      const items = [
+        makeHighlight({
+          id: 'h1',
+          text: 'The quick fox',
+          notes: 'Important article',
+          tags: ['wildlife'],
+        }),
+      ];
+      const results = searchHighlights(items, 'quick wildlife');
+      expect(results).toHaveLength(1);
+      expect(results[0]?.matchedFields).toEqual(['text', 'tags']);
+    });
+
+    it('returns empty when any token fails to match', () => {
+      const items = [makeHighlight({ text: 'The quick brown fox' })];
+      const results = searchHighlights(items, 'quick elephant');
+      expect(results).toEqual([]);
+    });
+
+    it('fast-paths domain extraction without throwing on malformed or standard urls', () => {
+      const items = [
+        makeHighlight({ id: 'std', url: 'https://docs.google.com/doc/1', domain: undefined }),
+        makeHighlight({ id: 'custom', url: 'https://anything.com', domain: 'custom.org' }),
+        makeHighlight({ id: 'invalid', url: 'not-a-valid-url', domain: undefined }),
+      ];
+      const googleResults = searchHighlights(items, 'google');
+      expect(googleResults.map((r) => r.highlight.id)).toEqual(['std']);
+      expect(googleResults[0]?.matchedFields).toEqual(['url', 'domain']);
+
+      const customResults = searchHighlights(items, 'custom');
+      expect(customResults.map((r) => r.highlight.id)).toEqual(['custom']);
+      expect(customResults[0]?.matchedFields).toEqual(['domain']);
+    });
+  });
 });
 
 describe('formatMatchBadge', () => {

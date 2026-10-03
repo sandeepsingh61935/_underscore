@@ -9,13 +9,12 @@ import { createClient } from '@supabase/supabase-js';
 
 import { APIErrorHandler } from './api-error-handler';
 import type { APIError } from './api-errors';
-import { AuthenticationError, TimeoutError, ValidationError } from './api-errors';
+import { AuthenticationError, TimeoutError } from './api-errors';
 import { HTTPSValidator } from './https-validator';
 import type {
   IAPIClient,
   SyncEvent,
   PushResult,
-  Collection,
 } from './interfaces/i-api-client';
 
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
@@ -55,7 +54,7 @@ interface RequiredPolicy {
   role: RlsPolicyRole;
 }
 
-const REQUIRED_RLS_TABLES = ['highlights', 'sync_events', 'collections'] as const;
+const REQUIRED_RLS_TABLES = ['highlights', 'sync_events'] as const;
 type RlsTable = (typeof REQUIRED_RLS_TABLES)[number];
 
 const REQUIRED_RLS_POLICIES: Record<RlsTable, RequiredPolicy[]> = {
@@ -68,12 +67,6 @@ const REQUIRED_RLS_POLICIES: Record<RlsTable, RequiredPolicy[]> = {
   sync_events: [
     { name: 'sync_events_select_own', command: 'SELECT', role: 'authenticated' },
     { name: 'sync_events_insert_own', command: 'INSERT', role: 'authenticated' },
-  ],
-  collections: [
-    { name: 'collections_select_own', command: 'SELECT', role: 'authenticated' },
-    { name: 'collections_insert_own', command: 'INSERT', role: 'authenticated' },
-    { name: 'collections_update_own', command: 'UPDATE', role: 'authenticated' },
-    { name: 'collections_delete_own', command: 'DELETE', role: 'authenticated' },
   ],
 };
 
@@ -133,10 +126,13 @@ export class SupabaseClient implements IAPIClient {
     config: SupabaseConfig,
     injectedClient?: SupabaseSDKClient
   ) {
-    // Enforce HTTPS for security (prevents MITM attacks)
-    HTTPSValidator.validate(config.url);
+    const effectiveUrl = config.url?.trim() || 'https://placeholder.supabase.co';
+    const effectiveKey = config.anonKey?.trim() || 'placeholder-anon-key';
 
-    this.sdkClient = injectedClient ?? createClient(config.url, config.anonKey);
+    // Enforce HTTPS for security (prevents MITM attacks)
+    HTTPSValidator.validate(effectiveUrl);
+
+    this.sdkClient = injectedClient ?? createClient(effectiveUrl, effectiveKey);
     this.timeoutMs = config.timeoutMs ?? 5000;
 
     this.logger.debug('SupabaseClient initialized', {
@@ -661,82 +657,6 @@ export class SupabaseClient implements IAPIClient {
     }
   }
 
-  // ==================== Collection Operations ====================
-
-  async createCollection(name: string, description?: string): Promise<Collection> {
-    const user = this.authManager.currentUser;
-    if (!user) {
-      throw new AuthenticationError('User not authenticated');
-    }
-
-    // Validate name
-    if (!name || name.length === 0 || name.length > 100) {
-      throw new ValidationError('Collection name must be 1-100 characters', 'name');
-    }
-
-    this.logger.debug('Creating collection', { name });
-
-    try {
-      const response = (await this.withTimeout(
-        this.sdkClient
-          .from('collections')
-          .insert({
-            user_id: user.id,
-            name,
-            description: description || null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .select()
-          .single()
-      )) as any;
-
-      if (response.error) {
-        throw this.transformError(response.error);
-      }
-
-      const collection = this.transformCollectionRow(response.data);
-
-      this.logger.debug('Collection created', { id: collection.id });
-      return collection;
-    } catch (error) {
-      this.logger.error('Failed to create collection', error as Error, { name });
-      throw error;
-    }
-  }
-
-  async getCollections(): Promise<Collection[]> {
-    const user = this.authManager.currentUser;
-    if (!user) {
-      throw new AuthenticationError('User not authenticated');
-    }
-
-    this.logger.debug('Fetching collections');
-
-    try {
-      const response = (await this.withTimeout(
-        this.sdkClient
-          .from('collections')
-          .select('*, highlights(count)')
-          .eq('user_id', user.id)
-      )) as any;
-
-      if (response.error) {
-        throw this.transformError(response.error);
-      }
-
-      const collections = (response.data || []).map((row: any) =>
-        this.transformCollectionRow(row)
-      );
-
-      this.logger.debug('Collections fetched', { count: collections.length });
-      return collections;
-    } catch (error) {
-      this.logger.error('Failed to fetch collections', error as Error);
-      throw error;
-    }
-  }
-
   // ==================== Helper Methods ====================
 
   /**
@@ -756,19 +676,5 @@ export class SupabaseClient implements IAPIClient {
    */
   private transformError(error: any): APIError {
     return APIErrorHandler.handle(error);
-  }
-
-  /**
-   * Transform Supabase collection row to Collection
-   */
-  private transformCollectionRow(row: any): Collection {
-    return {
-      id: row.id,
-      name: row.name,
-      description: row.description || undefined,
-      highlight_count: row.highlights?.[0]?.count || 0,
-      created_at: new Date(row.created_at),
-      updated_at: new Date(row.updated_at),
-    };
   }
 }

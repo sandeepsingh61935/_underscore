@@ -37,6 +37,12 @@ describe('mode-capabilities', () => {
       expect(MODE_CAPABILITY_MATRIX.pro.mcp).toBe(false);
       expect(MODE_CAPABILITY_MATRIX.basic.mcp).toBe(false);
     });
+
+    it('all modes allow page groups', () => {
+      expect(MODE_CAPABILITY_MATRIX.basic.groups).toBe(true);
+      expect(MODE_CAPABILITY_MATRIX.pro.groups).toBe(true);
+      expect(MODE_CAPABILITY_MATRIX.pro_xai.groups).toBe(true);
+    });
   });
 
   describe('resolveLibraryAccess', () => {
@@ -146,6 +152,17 @@ describe('mode-capabilities', () => {
 
     it('allows search in basic mode with basic storage scope (local, no auth required)', () => {
       const result = canUseFeature('search', {
+        mode: 'basic',
+        capabilities: getCapabilitiesForMode('basic'),
+        isAuthenticated: false,
+        storageScope: 'basic',
+        isPaidActive: false,
+      });
+      expect(result).toEqual({ allowed: true });
+    });
+
+    it('allows groups in basic mode with basic storage scope (local, no auth required)', () => {
+      const result = canUseFeature('groups', {
         mode: 'basic',
         capabilities: getCapabilitiesForMode('basic'),
         isAuthenticated: false,

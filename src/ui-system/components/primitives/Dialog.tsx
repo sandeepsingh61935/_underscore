@@ -15,6 +15,7 @@ export interface DialogProps {
   actions?: React.ReactNode;
   hideCloseButton?: boolean;
   className?: string;
+  maxWidth?: number | string;
 }
 
 const overlayStyle: React.CSSProperties = {
@@ -56,6 +57,7 @@ export function Dialog({
   children,
   actions,
   hideCloseButton = false,
+  maxWidth,
 }: DialogProps): React.ReactNode {
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -109,7 +111,11 @@ export function Dialog({
           role="dialog"
           aria-modal="true"
           aria-labelledby={title ? 'dialog-title' : undefined}
-          style={panelStyle}
+          style={{
+            ...panelStyle,
+            maxWidth: maxWidth ?? panelStyle.maxWidth,
+            overflowX: 'hidden',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           {(title || !hideCloseButton) && (
@@ -169,6 +175,7 @@ export function Dialog({
             style={{
               flex: 1,
               overflowY: 'auto',
+              overflowX: 'hidden',
               padding: '12px 16px 16px',
               color: 'var(--ink-2)',
               fontSize: 'var(--step-0)',
@@ -181,7 +188,8 @@ export function Dialog({
             <div
               style={{
                 display: 'flex',
-                alignItems: 'stretch',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
                 gap: 8,
                 padding: '12px 16px 16px',
                 borderTop: '1px solid var(--rule-soft)',

@@ -50,6 +50,7 @@ export const MODE_CAPABILITY_MATRIX: Record<ModeType, ModeCapabilities> = {
     mcp: false,
     search: true,
     multiSelector: false,
+    groups: true,
   },
   pro: {
     persistence: 'indexeddb',
@@ -62,6 +63,7 @@ export const MODE_CAPABILITY_MATRIX: Record<ModeType, ModeCapabilities> = {
     mcp: false,
     search: true,
     multiSelector: true,
+    groups: true,
   },
   pro_xai: {
     persistence: 'indexeddb',
@@ -74,6 +76,7 @@ export const MODE_CAPABILITY_MATRIX: Record<ModeType, ModeCapabilities> = {
     mcp: true,
     search: true,
     multiSelector: true,
+    groups: true,
   },
 };
 

@@ -71,6 +71,20 @@
   /* Sync success state — matches --utility-ok family. */
   --synced: #2c8a3a;
 
+  /* Page-group colors — nine Chrome tab-group hues tuned to Editorial.
+     Light values are deepened so each passes 3:1 against --paper (#f7f5f0);
+     dark overrides below lighten each hue to pass 3:1 against #141312.
+     Use via var(--group-<color>); never hardcode these hexes in .tsx. */
+  --group-grey: #5f5b55;
+  --group-blue: #2b5cab;
+  --group-red: #b3261e;
+  --group-yellow: #7a5200;
+  --group-green: #1e7a34;
+  --group-pink: #a91e5c;
+  --group-purple: #6d28b8;
+  --group-cyan: #0b6e7a;
+  --group-orange: #a84a08;
+
   /* Raised paper — hover fills on paper surfaces. */
   --paper-3: color-mix(in oklch, var(--ink) 6%, var(--paper-2));
 
@@ -217,6 +231,17 @@
   --utility-overlay-40: rgba(0, 0, 0, 0.5);
   --utility-overlay-78: rgba(0, 0, 0, 0.78);
   --utility-overlay-88: rgba(0, 0, 0, 0.88);
+
+  /* Page-group colors — lightened for 3:1+ against dark --paper (#141312). */
+  --group-grey: #c4beb2;
+  --group-blue: #8ab4f8;
+  --group-red: #f28b82;
+  --group-yellow: #fdd663;
+  --group-green: #81c995;
+  --group-pink: #f48db0;
+  --group-purple: #c9a6f2;
+  --group-cyan: #78d9e6;
+  --group-orange: #fca755;
 }
 
 /* Base resets inside artboards and global scrollbars */
@@ -1480,10 +1505,11 @@ button.hl-icon.is-danger:active {
   margin-top: 12px;
 }
 
-/* Tab bar in popup — three equal tracks (Home · Library · Settings) */
+/* Tab bar in popup — equal tracks across all primary tabs (Home · Library · Groups · Settings) */
 .tabbar {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   border-top: 1px solid var(--rule);
   background: var(--paper);
   flex-shrink: 0;
@@ -1492,15 +1518,27 @@ button.hl-icon.is-danger:active {
   all: unset;
   box-sizing: border-box;
   width: 100%;
-  padding: 12px 4px;
+  padding: 12px 2px;
   text-align: center;
   font-family: var(--mono);
   font-size: var(--step--2);
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-3);
   cursor: pointer;
   min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 120ms ease;
+  user-select: none;
+}
+.tabbar button:hover {
+  color: var(--ink);
+}
+.tabbar button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 .tabbar button.active {
   color: var(--ink);
@@ -1510,8 +1548,8 @@ button.hl-icon.is-danger:active {
   content: '';
   position: absolute;
   top: 0;
-  left: 20%;
-  right: 20%;
+  left: 15%;
+  right: 15%;
   border-top: 2px solid var(--accent);
 }
 
@@ -2636,6 +2674,7 @@ button.sr-icon.is-delete:active {
   display: flex;
   gap: 2px;
   padding: 3px;
+  min-height: 36px;
   border-radius: var(--radius);
   background: var(--paper-2);
   box-sizing: border-box;
@@ -2643,14 +2682,20 @@ button.sr-icon.is-delete:active {
 .seg-option {
   position: relative;
   flex: 1;
-  padding: 6px 8px;
+  min-height: 30px;
+  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius);
   border: none;
   background: transparent;
   cursor: pointer;
   transition: color 120ms var(--ease);
   color: var(--ink-2);
-  font-size: var(--step--1);
+  font-size: var(--step-0);
+  font-family: var(--sans);
+  font-weight: 500;
   box-sizing: border-box;
 }
 .seg-option:focus-visible {
@@ -4193,4 +4238,76 @@ button.sr-icon.is-delete:active {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Page-group ColorSwatch — solid dot / hollow ring + radio picker.
+   Color itself always comes from var(--group-<color>) via inline style;
+   these classes carry only geometry, borders, and interaction states. */
+.group-swatch {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.group-swatch-sm {
+  width: 12px;
+  height: 12px;
+}
+.group-swatch-md {
+  width: 16px;
+  height: 16px;
+}
+.group-swatch-solid {
+  border: 1px solid var(--rule-soft);
+}
+.group-swatch-hollow {
+  background: transparent;
+  border-width: 2px;
+  border-style: solid;
+}
+.group-swatch-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.group-swatch-option {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+}
+.group-swatch-option:hover {
+  background: var(--utility-overlay-06);
+  border-color: var(--rule-soft);
+}
+.group-swatch-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.group-swatch-option[aria-checked='true'] {
+  border-color: var(--rule);
+  background: var(--paper-2);
+}
+.group-swatch-option:has(input:checked) {
+  border-color: var(--rule);
+  background: var(--paper-2);
+}
+.group-swatch-option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.group-swatch-radio-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }

@@ -55,79 +55,10 @@ export interface HighlightDeletedPayload {
 }
 
 /**
- * Collection data structure
- * Groups related highlights together
- */
-export interface CollectionData {
-  /** Collection ID */
-  readonly id: string;
-
-  /** Collection name */
-  readonly name: string;
-
-  /** Optional description */
-  readonly description?: string;
-
-  /** Highlight IDs in this collection */
-  readonly highlightIds: readonly string[];
-
-  /** Creation timestamp */
-  readonly createdAt: number;
-
-  /** Last update timestamp */
-  readonly updatedAt: number;
-
-  /** User who owns this collection */
-  readonly userId: string;
-}
-
-/**
- * Payload for COLLECTION_CREATED event
- */
-export interface CollectionCreatedPayload {
-  /** Collection entity ID */
-  readonly id: string;
-
-  /** Complete collection data */
-  readonly data: CollectionData;
-}
-
-/**
- * Payload for COLLECTION_UPDATED event
- */
-export interface CollectionUpdatedPayload {
-  /** Collection entity ID */
-  readonly id: string;
-
-  /** Partial collection data (only changed fields) */
-  readonly changes: Partial<Omit<CollectionData, 'id' | 'createdAt' | 'userId'>>;
-
-  /** Timestamp of previous version */
-  readonly previousVersion: number;
-}
-
-/**
- * Payload for COLLECTION_DELETED event
- */
-export interface CollectionDeletedPayload {
-  /** Collection entity ID */
-  readonly id: string;
-
-  /** What happens to highlights in this collection */
-  readonly highlightAction: 'keep' | 'delete';
-
-  /** Timestamp when deleted */
-  readonly deletedAt: number;
-}
-
-/**
  * Union type of all event payloads
  * Useful for type-safe event handling
  */
 export type EventPayload =
   | HighlightCreatedPayload
   | HighlightUpdatedPayload
-  | HighlightDeletedPayload
-  | CollectionCreatedPayload
-  | CollectionUpdatedPayload
-  | CollectionDeletedPayload;
+  | HighlightDeletedPayload;
