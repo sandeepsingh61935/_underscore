@@ -181,9 +181,9 @@ describe('EventStore Integration Tests', () => {
       );
       await store.append(
         await createTestEvent({
-          type: SyncEventType.COLLECTION_CREATED,
+          type: SyncEventType.HIGHLIGHT_DELETED,
           timestamp: 400,
-          payload: { id: 'c1', name: 'My Collection' },
+          payload: { id: 'h3', reason: 'user' },
           userId: 'user-1',
         })
       );

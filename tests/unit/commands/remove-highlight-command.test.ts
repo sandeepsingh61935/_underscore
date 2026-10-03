@@ -48,6 +48,7 @@ function createMockModeManager() {
       search: false,
       export: false,
       multiSelector: false,
+      groups: false,
     },
     createHighlight: vi.fn(),
     removeHighlight: vi.fn().mockResolvedValue(undefined),

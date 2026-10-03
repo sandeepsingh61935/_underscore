@@ -24,12 +24,6 @@ export enum SyncEventType {
   HIGHLIGHT_UPDATED = 'highlight.updated',
   /** Highlight soft-deleted */
   HIGHLIGHT_DELETED = 'highlight.deleted',
-  /** Collection created */
-  COLLECTION_CREATED = 'collection.created',
-  /** Collection updated (name, description) */
-  COLLECTION_UPDATED = 'collection.updated',
-  /** Collection deleted */
-  COLLECTION_DELETED = 'collection.deleted',
 }
 
 /**
@@ -77,7 +71,7 @@ export interface EventFilter {
   /** Filter by event type */
   eventType?: SyncEventType;
 
-  /** Filter by entity ID (highlight ID, collection ID) */
+  /** Filter by entity ID (highlight ID) */
   entityId?: string;
 
   /** Filter by user ID */
@@ -189,7 +183,7 @@ export interface IEventStore {
   /**
    * Get the most recent event for a specific entity
    *
-   * @param entityId - Entity identifier (highlight ID, collection ID)
+   * @param entityId - Entity identifier (highlight ID)
    * @returns Latest event or null if not found
    * @throws {StorageError} If query fails
    *
