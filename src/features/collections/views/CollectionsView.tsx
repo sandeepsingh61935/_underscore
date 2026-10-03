@@ -22,6 +22,7 @@ import {
 } from '@/features/collections/hooks/useLibraryRelatedness';
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
 import { useGroups } from '@/features/groups/hooks/useGroups';
+import { useFilterStore } from '@/features/collections/stores/filter.store';
 import { DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import {
   guestLibraryLocalBannerCopy,
@@ -37,12 +38,10 @@ import {
   matchGroupNames,
 } from '@/shared/utils/group-library-search';
 import {
-  DEFAULT_SEARCH_FIELDS,
   filterHighlightsByRefineAndTags,
   matchesGroupUrl,
-  type RefineFilter,
 } from '@/shared/utils/highlight-filter';
-import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
+import { formatMatchBadge } from '@/shared/utils/highlight-search';
 import { resolveLibraryAccess } from '@/shared/utils/mode-capabilities';
 import { getSectionKey } from '@/shared/utils/section-key';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
@@ -83,12 +82,17 @@ export function CollectionsView({
   const { deleteScope } = useHighlightDelete();
   const { tags: userTags, tagNames: labelSuggestions } = useUserTags(isAuthenticated);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchFields, setSearchFields] = useState<SearchField[]>([
-    ...DEFAULT_SEARCH_FIELDS,
-  ]);
-  const [refine, setRefine] = useState<RefineFilter[]>([]);
-  const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const {
+    query: searchQuery,
+    fields: searchFields,
+    refine,
+    tagFilters,
+    setQuery: setSearchQuery,
+    setFields: setSearchFields,
+    setRefine,
+    setTagFilters,
+    resetAll: resetFilterStore,
+  } = useFilterStore();
   const [groupFilters, setGroupFilters] = useState<string[]>([]);
   const [deleteDomain, setDeleteDomain] = useState<{
     domain: string;
@@ -101,6 +105,8 @@ export function CollectionsView({
     query: searchQuery,
     scope: { kind: 'library' },
     fields: searchFields,
+    refine,
+    tagFilters,
   });
 
   // Page Groups for the Group filter + group-name matches (read-only here).
@@ -134,23 +140,26 @@ export function CollectionsView({
     [searchResults, refine, tagFilters, groupUrlSet]
   );
 
-  const isSearching = searchQuery.trim().length > 0;
-  const showResultsList = isSearching;
+  const hasFilter =
+    searchQuery.trim().length > 0 || refine.length > 0 || tagFilters.length > 0;
+  const isSearching = hasFilter;
+  const showResultsList = hasFilter;
 
   const searchGroups = useMemo(() => {
-    if (!isSearching) return [];
+    if (!hasFilter) return [];
     // Domain chip (or default All) also matches collection hostnames with zero quote hits.
     const domainFieldOn = searchFields.length === 0 || searchFields.includes('domain');
-    const nameMatchedDomains = domainFieldOn
-      ? matchDomainNames(
-          collections.map((c) => c.domain),
-          searchQuery
-        )
-      : [];
+    const nameMatchedDomains =
+      domainFieldOn && searchQuery.trim().length > 0
+        ? matchDomainNames(
+            collections.map((c) => c.domain),
+            searchQuery
+          )
+        : [];
     return groupSearchResultsByDomainAndSection(filteredResults, {
       nameMatchedDomains,
     });
-  }, [isSearching, collections, searchQuery, filteredResults, searchFields]);
+  }, [hasFilter, collections, searchQuery, filteredResults, searchFields]);
 
   const searchResultCount = useMemo(
     () => countGranularSearchResults(searchGroups),
@@ -202,13 +211,9 @@ export function CollectionsView({
   const guestLocalBanner = guestLibraryLocalBannerCopy();
 
   const clearSearchAndFilters = (): void => {
-    setSearchQuery('');
-    setSearchFields([...DEFAULT_SEARCH_FIELDS]);
-    setRefine([]);
-    setTagFilters([]);
+    resetFilterStore();
     setGroupFilters([]);
   };
-
   const handleCollectionClick = (domain: string): void => {
     if (onCollectionClick) {
       onCollectionClick(domain);

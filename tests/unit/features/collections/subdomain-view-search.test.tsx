@@ -104,10 +104,12 @@ vi.mock('@/features/ai/hooks/usePageContext', () => ({
   usePageContext: vi.fn(() => ({ fetch: vi.fn() })),
 }));
 
+import { clearFilterStore } from '@/features/collections/stores/filter.store';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 
 describe('SubDomainView search wiring', () => {
   beforeEach(() => {
+    clearFilterStore();
     navigateMock.mockClear();
     vi.mocked(useApp).mockReturnValue({
       isAuthenticated: true,

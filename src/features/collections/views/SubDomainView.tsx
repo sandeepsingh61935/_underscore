@@ -19,6 +19,7 @@ import {
   useRelatedTags,
 } from '@/features/collections/hooks/useLibraryRelatedness';
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
+import { useFilterStore } from '@/features/collections/stores/filter.store';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import { libraryNoMatchesCopy } from '@/shared/copy/product-surface-copy';
 import {
@@ -28,12 +29,8 @@ import {
 import type { ModeType } from '@/shared/schemas/mode-state-schemas';
 import { deleteSectionCopy } from '@/shared/utils/confirm-dialog-copy';
 import { highlightActivityMs } from '@/shared/utils/highlight-activity';
-import {
-  DEFAULT_SEARCH_FIELDS,
-  filterHighlightsByRefineAndTags,
-  type RefineFilter,
-} from '@/shared/utils/highlight-filter';
-import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
+import { filterHighlightsByRefineAndTags } from '@/shared/utils/highlight-filter';
+import { formatMatchBadge } from '@/shared/utils/highlight-search';
 import { openExternalUrl } from '@/shared/utils/open-external-url';
 import { getSectionKey } from '@/shared/utils/section-key';
 import { toast } from 'sonner';
@@ -104,26 +101,25 @@ export function SubDomainView({
     );
   }, [highlights, section]);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchFields, setSearchFields] = useState<SearchField[]>([
-    ...DEFAULT_SEARCH_FIELDS,
-  ]);
-  const [refine, setRefine] = useState<RefineFilter[]>([]);
-  const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const {
+    query: searchQuery,
+    fields: searchFields,
+    refine,
+    tagFilters,
+    setQuery: setSearchQuery,
+    setFields: setSearchFields,
+    setRefine,
+    setTagFilters,
+    resetAll: clearSearchAndFilters,
+  } = useFilterStore();
   const [sort, setSort] = useState<LibrarySortKey>('newest');
-
-  useEffect(() => {
-    setSearchQuery('');
-    setRefine([]);
-    setTagFilters([]);
-    setSearchFields([...DEFAULT_SEARCH_FIELDS]);
-    setSort('newest');
-  }, [domain, section]);
 
   const { results: searchResults, isLoading: isSearchLoading } = useHighlightSearch({
     query: searchQuery,
     scope: { kind: 'section', domain, section },
     fields: searchFields,
+    refine,
+    tagFilters,
   });
   const filteredSearchResults = useMemo(
     () => filterHighlightsByRefineAndTags(searchResults, { refine, tagFilters }),
@@ -133,7 +129,9 @@ export function SubDomainView({
     () => filterHighlightsByRefineAndTags(sectionHighlights, { refine, tagFilters }),
     [sectionHighlights, refine, tagFilters]
   );
-  const isSearching = searchQuery.trim().length > 0;
+  const hasFilter =
+    searchQuery.trim().length > 0 || refine.length > 0 || tagFilters.length > 0;
+  const isSearching = hasFilter;
   const hasRefineOrTags = refine.length > 0 || tagFilters.length > 0;
   const availableTags = useMemo(
     () => labelSuggestions.map((name) => ({ label: name })),
@@ -181,13 +179,6 @@ export function SubDomainView({
   }, [relatedHighlightResults, sectionHighlights, domain, section]);
 
   const noMatches = libraryNoMatchesCopy();
-
-  const clearSearchAndFilters = (): void => {
-    setSearchQuery('');
-    setSearchFields([...DEFAULT_SEARCH_FIELDS]);
-    setRefine([]);
-    setTagFilters([]);
-  };
 
   useEffect(() => {
     if (isLoading) return;

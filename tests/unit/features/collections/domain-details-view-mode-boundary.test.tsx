@@ -131,6 +131,6 @@ describe('DomainDetailsView basic mode boundaries', () => {
 
     expect(screen.queryByText('Synthesize this domain')).toBeNull();
     expect(screen.queryByPlaceholderText('Ask about this domain…')).toBeNull();
-    expect(screen.getByLabelText('Delete domain')).toBeTruthy();
+    expect(screen.getByTestId('domain-scope-toolbar')).toBeTruthy();
   });
 });

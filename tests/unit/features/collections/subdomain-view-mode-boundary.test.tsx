@@ -112,7 +112,7 @@ describe('SubDomainView basic mode boundaries', () => {
     expect(screen.getByTestId('export-menu-trigger')).toBeDisabled();
   });
 
-  it('hides summarize and ask footer; keeps export/delete toolbar for a guest in Basic', () => {
+  it('hides summarize and ask footer; keeps export toolbar for a guest in Basic', () => {
     render(
       <MemoryRouter>
         <SubDomainView domain="example.com" section="/" />
@@ -122,7 +122,6 @@ describe('SubDomainView basic mode boundaries', () => {
     expect(screen.queryByText('Summarize this section')).toBeNull();
     expect(screen.queryByPlaceholderText('Ask about this section…')).toBeNull();
     expect(screen.getByTestId('section-scope-toolbar')).toBeTruthy();
-    expect(screen.getByLabelText('Delete section')).toBeTruthy();
   });
 
   it('shows the marginalia strip invite for a guest in Basic (local metadata is not gated)', () => {

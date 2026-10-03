@@ -44,6 +44,7 @@ vi.mock('@/features/collections/hooks/useUserTags', () => ({
 import { useApp } from '@/core/context/AppProvider';
 import { useCollections } from '@/features/collections/hooks/useCollections';
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
+import { clearFilterStore } from '@/features/collections/stores/filter.store';
 
 const sampleCollections = [
   {
@@ -56,6 +57,7 @@ const sampleCollections = [
 
 describe('CollectionsView search wiring', () => {
   beforeEach(() => {
+    clearFilterStore();
     navigateMock.mockClear();
     vi.mocked(useCollections).mockReturnValue({
       collections: sampleCollections,

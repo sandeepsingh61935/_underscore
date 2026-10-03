@@ -18,6 +18,7 @@ import { useHighlightsByDomain } from '@/features/collections/hooks/useHighlight
 import { useHighlightSearch } from '@/features/collections/hooks/useHighlightSearch';
 import { useSectionLabels } from '@/features/collections/hooks/useSectionLabels';
 import { useUserTags } from '@/features/collections/hooks/useUserTags';
+import { useFilterStore } from '@/features/collections/stores/filter.store';
 import { AUTH_REQUIRED_MODES, DEFAULT_MODE } from '@/shared/constants/mode-storage';
 import { libraryNoMatchesCopy } from '@/shared/copy/product-surface-copy';
 import type { LibrarySortKey } from '@/shared/library/library-sort';
@@ -30,12 +31,8 @@ import {
   matchSectionNames,
 } from '@/shared/utils/group-library-search';
 import { highlightActivityMs } from '@/shared/utils/highlight-activity';
-import {
-  DEFAULT_SEARCH_FIELDS,
-  filterHighlightsByRefineAndTags,
-  type RefineFilter,
-} from '@/shared/utils/highlight-filter';
-import { formatMatchBadge, type SearchField } from '@/shared/utils/highlight-search';
+import { filterHighlightsByRefineAndTags } from '@/shared/utils/highlight-filter';
+import { formatMatchBadge } from '@/shared/utils/highlight-search';
 import { getSectionKey } from '@/shared/utils/section-key';
 import { EmptyState } from '@/ui-system/components/composed/EmptyState';
 import { useModeFeature } from '@/ui-system/hooks/useModeFeature';
@@ -80,44 +77,39 @@ export function DomainDetailsView({
   } | null>(null);
   const [isDeletingSection, setIsDeletingSection] = useState(false);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchFields, setSearchFields] = useState<SearchField[]>([
-    ...DEFAULT_SEARCH_FIELDS,
-  ]);
-  const [refine, setRefine] = useState<RefineFilter[]>([]);
-  const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const {
+    query: searchQuery,
+    fields: searchFields,
+    refine,
+    tagFilters,
+    setQuery: setSearchQuery,
+    setFields: setSearchFields,
+    setRefine,
+    setTagFilters,
+    resetAll: clearSearchAndFilters,
+  } = useFilterStore();
   const [expandedHighlightId, setExpandedHighlightId] = useState<string | null>(null);
   const [sort, setSort] = useState<LibrarySortKey>('newest');
   const { tags: userTags, tagNames: labelSuggestions } = useUserTags(isAuthenticated);
-
-  useEffect(() => {
-    setSearchQuery('');
-    setRefine([]);
-    setTagFilters([]);
-    setSearchFields([...DEFAULT_SEARCH_FIELDS]);
-  }, [domain]);
 
   const { results: searchResults, isLoading: isSearchLoading } = useHighlightSearch({
     query: searchQuery,
     scope: { kind: 'domain', domain },
     fields: searchFields,
+    refine,
+    tagFilters,
   });
   const filteredResults = useMemo(
     () => filterHighlightsByRefineAndTags(searchResults, { refine, tagFilters }),
     [searchResults, refine, tagFilters]
   );
-  const isSearching = searchQuery.trim().length > 0;
+  const hasFilter =
+    searchQuery.trim().length > 0 || refine.length > 0 || tagFilters.length > 0;
+  const isSearching = hasFilter;
   const availableTags = useMemo(
     () => userTags.map((t) => ({ label: t.name })),
     [userTags]
   );
-
-  const clearSearchAndFilters = (): void => {
-    setSearchQuery('');
-    setSearchFields([...DEFAULT_SEARCH_FIELDS]);
-    setRefine([]);
-    setTagFilters([]);
-  };
 
   const sections = useMemo(() => {
     const map = new Map<string, { count: number; lastActivity: number }>();
@@ -150,14 +142,17 @@ export function DomainDetailsView({
   }, [highlights, sort]);
 
   const searchSectionGroups = useMemo(() => {
-    if (!isSearching) return [];
-    const nameMatchedSections = matchSectionNames(
-      sections.map((s) => s.path),
-      searchQuery,
-      (key) => displaySectionTitle(key, labels)
-    );
+    if (!hasFilter) return [];
+    const nameMatchedSections =
+      searchQuery.trim().length > 0
+        ? matchSectionNames(
+            sections.map((s) => s.path),
+            searchQuery,
+            (key) => displaySectionTitle(key, labels)
+          )
+        : [];
     return groupSearchResultsBySection(filteredResults, { nameMatchedSections });
-  }, [isSearching, sections, searchQuery, labels, filteredResults]);
+  }, [hasFilter, sections, searchQuery, labels, filteredResults]);
 
   const searchResultCount = useMemo(
     () => countSectionGranularResults(searchSectionGroups),
