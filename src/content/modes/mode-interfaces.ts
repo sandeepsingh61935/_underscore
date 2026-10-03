@@ -54,6 +54,9 @@ export interface ModeCapabilities {
 
   /** Multi-selector restoration (XPath+Position+Fuzzy) */
   multiSelector: boolean;
+
+  /** Page Groups (named + colored page/domain sets) */
+  groups: boolean;
 }
 
 /**

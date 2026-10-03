@@ -47,6 +47,7 @@ export class BasicMode extends BaseHighlightMode implements IBasicMode {
     mcp: false,
     search: true,
     multiSelector: false,
+    groups: true,
   };
 
   override async onActivate(): Promise<void> {

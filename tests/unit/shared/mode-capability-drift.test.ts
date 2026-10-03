@@ -52,4 +52,15 @@ describe('mode capability drift guard', () => {
     expect(modes.pro.capabilities).toEqual(MODE_CAPABILITY_MATRIX.pro);
     expect(modes.proXai.capabilities).toEqual(MODE_CAPABILITY_MATRIX.pro_xai);
   });
+
+  it('enables page groups in every mode', () => {
+    const modes = createModeFixtures();
+
+    expect(modes.basic.capabilities.groups).toBe(true);
+    expect(modes.pro.capabilities.groups).toBe(true);
+    expect(modes.proXai.capabilities.groups).toBe(true);
+    expect(MODE_CAPABILITY_MATRIX.basic.groups).toBe(true);
+    expect(MODE_CAPABILITY_MATRIX.pro.groups).toBe(true);
+    expect(MODE_CAPABILITY_MATRIX.pro_xai.groups).toBe(true);
+  });
 });

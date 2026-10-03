@@ -17,6 +17,7 @@ const BOOLEAN_FEATURES: FeatureKey[] = [
   'mcp',
   'search',
   'multiSelector',
+  'groups',
 ];
 
 const MODES: ModeType[] = ['basic', 'pro', 'pro_xai'];
@@ -26,7 +27,7 @@ const MODES: ModeType[] = ['basic', 'pro', 'pro_xai'];
  * commercial free window (signed-in free gets MCP; in-app AI never).
  */
 const SPEC_ALLOWED: Record<ModeType, ReadonlySet<FeatureKey>> = {
-  basic: new Set(['undo', 'collections', 'tags', 'search']),
+  basic: new Set(['undo', 'collections', 'tags', 'search', 'groups']),
   pro: new Set([
     'undo',
     'sync',
@@ -35,6 +36,7 @@ const SPEC_ALLOWED: Record<ModeType, ReadonlySet<FeatureKey>> = {
     'export',
     'search',
     'multiSelector',
+    'groups',
     'mcp',
   ]),
   pro_xai: new Set([
@@ -45,6 +47,7 @@ const SPEC_ALLOWED: Record<ModeType, ReadonlySet<FeatureKey>> = {
     'export',
     'search',
     'multiSelector',
+    'groups',
     'mcp',
   ]),
 };

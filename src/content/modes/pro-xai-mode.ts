@@ -32,5 +32,6 @@ export class ProXaiMode extends ProMode {
     mcp: true,
     search: true,
     multiSelector: true,
+    groups: true,
   };
 }

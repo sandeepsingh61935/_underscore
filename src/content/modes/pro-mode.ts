@@ -268,6 +268,7 @@ export class ProMode extends BaseHighlightMode implements IPersistentMode {
     mcp: false,
     search: true,
     multiSelector: true,
+    groups: true,
   };
 
   override shouldRestore(): boolean {
