@@ -5,6 +5,9 @@
  */
 
 import { getSectionKey } from '@/shared/utils/section-key';
+import type { KnownGroupPage } from '@/shared/utils/group-membership';
+import { resolveGroupPages } from '@/shared/utils/group-membership';
+import type { PageGroupItem } from '@/shared/types/page-group';
 
 export interface SearchResultLocation {
   id: string;
@@ -57,6 +60,37 @@ export function matchSectionNames(
     if (titleFor && includesQuery(titleFor(key), q)) return true;
     return false;
   });
+}
+
+/** Groups whose name contains the query (case-insensitive). Preserves objects. */
+export function matchGroupNames<T extends { name: string }>(
+  groups: readonly T[],
+  query: string
+): T[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  return groups.filter((g) => includesQuery(g.name, q));
+}
+
+/**
+ * Union of normalized page URLs resolved from the selected groups' items
+ * (explicit pages + domain-rule expansion over `knownPages`, via
+ * `resolveGroupPages`). Returns null when no group is selected so callers
+ * can skip the group dimension; an empty set means the selection resolves
+ * to no pages and matches nothing.
+ */
+export function buildGroupPageUrlSet(
+  items: readonly PageGroupItem[],
+  knownPages: readonly KnownGroupPage[],
+  groupIds: readonly string[]
+): Set<string> | null {
+  if (groupIds.length === 0) return null;
+  const selected = new Set(groupIds);
+  const resolved = resolveGroupPages(
+    items.filter((item) => selected.has(item.groupId)),
+    [...knownPages]
+  );
+  return new Set(resolved.map((p) => p.urlNormalized));
 }
 
 /**
