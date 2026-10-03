@@ -387,4 +387,61 @@ describe('WebHighlightCard', () => {
 
     expect(screen.getByRole('textbox', { name: 'Note' })).toBeTruthy();
   });
+
+  it('displays matching tag suggestions and adds tag on suggestion click', async () => {
+    const onTagsChange = vi.fn().mockResolvedValue(true);
+    render(
+      <WebHighlightCard
+        highlight={{ ...base, tags: ['existing'] }}
+        onTagsChange={onTagsChange}
+        tagSuggestions={['science', 'scifi', 'social', 'existing']}
+      />
+    );
+
+    const tagBtn = screen.getByRole('button', { name: 'Add tags' });
+    fireEvent.click(tagBtn);
+
+    const input = screen.getByPlaceholderText('Add tag…');
+    fireEvent.change(input, { target: { value: 'sci' } });
+
+    expect(screen.getByRole('listbox', { name: /Suggested tags/i })).toBeTruthy();
+    expect(screen.getByText('#science')).toBeTruthy();
+    expect(screen.getByText('#scifi')).toBeTruthy();
+    expect(screen.queryByText('#social')).toBeNull();
+    expect(screen.queryByText('#existing')).toBeNull();
+
+    fireEvent.mouseDown(screen.getByText('#science'));
+
+    await vi.waitFor(() => {
+      expect(onTagsChange).toHaveBeenCalledWith(base.id, ['existing', 'science']);
+    });
+  });
+
+  it('navigates suggestions with ArrowDown/ArrowUp and selects on Enter', async () => {
+    const onTagsChange = vi.fn().mockResolvedValue(true);
+    render(
+      <WebHighlightCard
+        highlight={{ ...base, tags: [] }}
+        onTagsChange={onTagsChange}
+        tagSuggestions={['alpha', 'alpine', 'beta']}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add tags' }));
+    const input = screen.getByPlaceholderText('Add tag…');
+
+    fireEvent.change(input, { target: { value: 'al' } });
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(screen.getByRole('option', { name: /#alpha/i })).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(screen.getByRole('option', { name: /#alpine/i })).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await vi.waitFor(() => {
+      expect(onTagsChange).toHaveBeenCalledWith(base.id, ['alpine']);
+    });
+  });
 });

@@ -6,7 +6,7 @@
  * Persist via parent callbacks (useUpdateHighlightMetadata / library patch).
  */
 
-import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { deleteHighlightCopy } from '@/shared/utils/confirm-dialog-copy';
@@ -53,6 +53,8 @@ export type WebHighlightCardProps = {
   onDelete?: (id: string) => Promise<boolean>;
   /** For consume analytics on source open. */
   clientKind?: WebClientKind;
+  /** Existing user tags for autocomplete suggestions when typing a new tag */
+  tagSuggestions?: string[];
 };
 
 function tagKey(t: string): string {
@@ -78,6 +80,7 @@ export function WebHighlightCard({
   onTagsChange,
   onDelete,
   clientKind = 'desktop',
+  tagSuggestions,
 }: WebHighlightCardProps): React.ReactElement {
   const [noteEditing, setNoteEditing] = useState(false);
   const [tagEditing, setTagEditing] = useState(false);
@@ -90,6 +93,8 @@ export function WebHighlightCard({
   const [tagError, setTagError] = useState<string | null>(null);
   const [savingNote, setSavingNote] = useState(false);
   const [savingTags, setSavingTags] = useState(false);
+  const [highlightedSuggestIdx, setHighlightedSuggestIdx] = useState(-1);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -100,7 +105,29 @@ export function WebHighlightCard({
   const isDeletingRef = useRef(false);
   const noteFieldId = useId();
   const tagFieldId = useId();
+  const autocompleteId = useId();
   const tagsBusyRef = useRef(false);
+
+  const cleanTagQuery = tagInput.trim().toLowerCase();
+  const matchingSuggestions = useMemo(() => {
+    if (!cleanTagQuery || !tagSuggestions || tagSuggestions.length === 0) return [];
+    const currentTagKeys = new Set(localTags.map(tagKey));
+    return tagSuggestions
+      .filter((t) => {
+        const key = tagKey(t);
+        return key && !currentTagKeys.has(key) && key.includes(cleanTagQuery);
+      })
+      .sort((a, b) => {
+        const aKey = tagKey(a);
+        const bKey = tagKey(b);
+        const aStarts = aKey.startsWith(cleanTagQuery);
+        const bStarts = bKey.startsWith(cleanTagQuery);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return aKey.localeCompare(bKey);
+      })
+      .slice(0, 6);
+  }, [tagSuggestions, localTags, cleanTagQuery]);
 
   const handleCopyText = useCallback(
     (e: React.MouseEvent) => {
@@ -243,36 +270,44 @@ export function WebHighlightCard({
     [h.id, onTagsChange]
   );
 
-  const addTag = useCallback(async () => {
-    if (!onTagsChange || tagsBusyRef.current) return;
-    const clean = normalizeTagInput(tagInput);
-    if (!clean) {
-      setTagError('Type a tag name first.');
-      tagInputRef.current?.focus();
-      return;
-    }
-    const previous = localTags;
-    const next = normalizeHighlightTags([...localTags, clean]);
-    if (next.length === previous.length) {
-      if (previous.some((t) => tagKey(t) === tagKey(clean))) {
-        setTagInput('');
-        setTagError(null);
+  const addTag = useCallback(
+    async (candidate?: string) => {
+      if (!onTagsChange || tagsBusyRef.current) return;
+      const rawCandidate = candidate ?? tagInput;
+      const clean = normalizeTagInput(rawCandidate);
+      if (!clean) {
+        setTagError('Type a tag name first.');
+        tagInputRef.current?.focus();
         return;
       }
-      setTagError('Tag limit reached (10).');
-      return;
-    }
-    // Clear input immediately so the next tag can be typed while save runs.
-    setTagInput('');
-    setTagError(null);
-    const ok = await persistTags(next, previous);
-    if (ok) {
-      window.setTimeout(() => tagInputRef.current?.focus(), 0);
-    } else {
-      // Restore typed value on failure so the user can retry without retyping.
-      setTagInput(clean);
-    }
-  }, [localTags, onTagsChange, persistTags, tagInput]);
+      const previous = localTags;
+      const next = normalizeHighlightTags([...localTags, clean]);
+      if (next.length === previous.length) {
+        if (previous.some((t) => tagKey(t) === tagKey(clean))) {
+          setTagInput('');
+          setTagError(null);
+          setHighlightedSuggestIdx(-1);
+          setShowSuggestions(false);
+          return;
+        }
+        setTagError('Tag limit reached (10).');
+        return;
+      }
+      // Clear input immediately so the next tag can be typed while save runs.
+      setTagInput('');
+      setTagError(null);
+      setHighlightedSuggestIdx(-1);
+      setShowSuggestions(false);
+      const ok = await persistTags(next, previous);
+      if (ok) {
+        window.setTimeout(() => tagInputRef.current?.focus(), 0);
+      } else {
+        // Restore typed value on failure so the user can retry without retyping.
+        setTagInput(clean);
+      }
+    },
+    [localTags, onTagsChange, persistTags, tagInput]
+  );
 
   const removeTag = useCallback(
     async (tag: string) => {
@@ -292,6 +327,8 @@ export function WebHighlightCard({
       e?.stopPropagation();
       if (!canEdit || !onTagsChange) return;
       setTagError(null);
+      setHighlightedSuggestIdx(-1);
+      setShowSuggestions(false);
       setTagEditing(true);
     },
     [canEdit, onTagsChange]
@@ -500,33 +537,104 @@ export function WebHighlightCard({
 
       {tagEditing && canEdit && onTagsChange ? (
         <div className="hl-tag-edit" data-od-id={`hl-tag-edit-${h.id}`}>
-          <input
-            id={tagFieldId}
-            ref={tagInputRef}
-            className="hl-tag-input"
-            placeholder="Add tag…"
-            aria-label="New tag name"
-            autoComplete="off"
-            value={tagInput}
-            disabled={savingTags}
-            onChange={(e) => {
-              setTagInput(e.target.value);
-              if (tagError) setTagError(null);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                void addTag();
-              }
-              if (e.key === 'Escape') {
-                e.preventDefault();
-                setTagEditing(false);
-                setTagInput('');
-                setTagError(null);
-              }
-            }}
-          />
+          <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
+            <input
+              id={tagFieldId}
+              ref={tagInputRef}
+              className="hl-tag-input"
+              style={{ width: '100%' }}
+              placeholder="Add tag…"
+              aria-label="New tag name"
+              autoComplete="off"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={showSuggestions && matchingSuggestions.length > 0}
+              aria-controls={showSuggestions && matchingSuggestions.length > 0 ? autocompleteId : undefined}
+              value={tagInput}
+              disabled={savingTags}
+              onFocus={() => {
+                if (matchingSuggestions.length > 0) setShowSuggestions(true);
+              }}
+              onChange={(e) => {
+                setTagInput(e.target.value);
+                setHighlightedSuggestIdx(-1);
+                setShowSuggestions(true);
+                if (tagError) setTagError(null);
+              }}
+              onKeyDown={(e) => {
+                if (showSuggestions && matchingSuggestions.length > 0) {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setHighlightedSuggestIdx((i) => (i + 1) % matchingSuggestions.length);
+                    return;
+                  }
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setHighlightedSuggestIdx((i) => (i <= 0 ? matchingSuggestions.length - 1 : i - 1));
+                    return;
+                  }
+                  if (e.key === 'Enter' && highlightedSuggestIdx >= 0) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const chosen = matchingSuggestions[highlightedSuggestIdx];
+                    void addTag(chosen);
+                    return;
+                  }
+                }
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void addTag();
+                }
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  if (showSuggestions && matchingSuggestions.length > 0) {
+                    setShowSuggestions(false);
+                    setHighlightedSuggestIdx(-1);
+                  } else {
+                    setTagEditing(false);
+                    setTagInput('');
+                    setTagError(null);
+                  }
+                }
+              }}
+              onBlur={() => {
+                window.setTimeout(() => setShowSuggestions(false), 150);
+              }}
+            />
+            {showSuggestions && matchingSuggestions.length > 0 && (
+              <div
+                id={autocompleteId}
+                className="hl-tag-autocomplete"
+                role="listbox"
+                aria-label="Suggested tags"
+                data-testid="web-tag-autocomplete-list"
+              >
+                {matchingSuggestions.map((tag, idx) => {
+                  const isHighlighted = idx === highlightedSuggestIdx;
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      className={`hl-tag-autocomplete-item${isHighlighted ? ' selected' : ''}`}
+                      role="option"
+                      aria-selected={isHighlighted}
+                      data-od-id={`tag-suggest-${tag}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        void addTag(tag);
+                      }}
+                    >
+                      <span className="hl-tag-autocomplete-label">#{tag}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             className="btn sm"

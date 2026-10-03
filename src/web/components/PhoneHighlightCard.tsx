@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 
 import { phoneHighlightHref } from './phoneHighlightHref';
 
@@ -29,6 +29,7 @@ export function PhoneHighlightCard({
   onDelete,
   selecting = false,
   selected = false,
+  tagSuggestions,
 }: {
   highlight: WebHighlight;
   meta: string;
@@ -39,6 +40,7 @@ export function PhoneHighlightCard({
   onDelete?: (id: string) => Promise<boolean>;
   selecting?: boolean;
   selected?: boolean;
+  tagSuggestions?: string[];
 }): React.ReactElement {
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -53,10 +55,34 @@ export function PhoneHighlightCard({
   );
   const [tagError, setTagError] = useState<string | null>(null);
   const [savingTags, setSavingTags] = useState(false);
+  const [highlightedSuggestIdx, setHighlightedSuggestIdx] = useState(-1);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const noteId = useId();
   const tagId = useId();
+  const autocompleteId = useId();
+
+  const cleanTagQuery = tagInput.trim().toLowerCase();
+  const matchingSuggestions = useMemo(() => {
+    if (!cleanTagQuery || !tagSuggestions || tagSuggestions.length === 0) return [];
+    const currentTagKeys = new Set(tags.map(tagKey));
+    return tagSuggestions
+      .filter((t) => {
+        const key = tagKey(t);
+        return key && !currentTagKeys.has(key) && key.includes(cleanTagQuery);
+      })
+      .sort((a, b) => {
+        const aKey = tagKey(a);
+        const bKey = tagKey(b);
+        const aStarts = aKey.startsWith(cleanTagQuery);
+        const bStarts = bKey.startsWith(cleanTagQuery);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return aKey.localeCompare(bKey);
+      })
+      .slice(0, 6);
+  }, [tagSuggestions, tags, cleanTagQuery]);
   const href = phoneHighlightHref(highlight);
   const long = highlight.quote.length > QUOTE_CLAMP;
   const note = (noteEditing ? noteDraft : (highlight.note ?? '')).trim();
@@ -79,9 +105,10 @@ export function PhoneHighlightCard({
     if (ok) setNoteEditing(false);
   }
 
-  async function addTag(): Promise<void> {
+  async function addTag(candidate?: string): Promise<void> {
     if (!onTagsChange) return;
-    const clean = normalizeTagInput(tagInput);
+    const raw = candidate ?? tagInput;
+    const clean = normalizeTagInput(raw);
     if (!clean) {
       setTagError('Type a tag name first.');
       return;
@@ -89,6 +116,8 @@ export function PhoneHighlightCard({
     const next = normalizeHighlightTags([...tags, clean]);
     if (next.length === tags.length) {
       setTagInput('');
+      setHighlightedSuggestIdx(-1);
+      setShowSuggestions(false);
       setTagError(
         tags.some((t) => tagKey(t) === tagKey(clean)) ? null : 'Tag limit reached (10).'
       );
@@ -96,6 +125,8 @@ export function PhoneHighlightCard({
     }
     setSavingTags(true);
     setTagError(null);
+    setHighlightedSuggestIdx(-1);
+    setShowSuggestions(false);
     const ok = await onTagsChange(highlight.id, next);
     setSavingTags(false);
     if (!ok) {
@@ -213,23 +244,97 @@ export function PhoneHighlightCard({
       ) : null}
       {tagEditing ? (
         <div className="phone-tag-edit">
-          <input
-            id={tagId}
-            className="phone-tag-input"
-            value={tagInput}
-            placeholder="Add tag…"
-            aria-label="New tag name"
-            onChange={(e) => {
-              setTagInput(e.target.value);
-              if (tagError) setTagError(null);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void addTag();
-              }
-            }}
-          />
+          <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
+            <input
+              id={tagId}
+              className="phone-tag-input"
+              style={{ width: '100%' }}
+              value={tagInput}
+              placeholder="Add tag…"
+              aria-label="New tag name"
+              autoComplete="off"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={showSuggestions && matchingSuggestions.length > 0}
+              aria-controls={showSuggestions && matchingSuggestions.length > 0 ? autocompleteId : undefined}
+              onFocus={() => {
+                if (matchingSuggestions.length > 0) setShowSuggestions(true);
+              }}
+              onChange={(e) => {
+                setTagInput(e.target.value);
+                setHighlightedSuggestIdx(-1);
+                setShowSuggestions(true);
+                if (tagError) setTagError(null);
+              }}
+              onKeyDown={(e) => {
+                if (showSuggestions && matchingSuggestions.length > 0) {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setHighlightedSuggestIdx((i) => (i + 1) % matchingSuggestions.length);
+                    return;
+                  }
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setHighlightedSuggestIdx((i) => (i <= 0 ? matchingSuggestions.length - 1 : i - 1));
+                    return;
+                  }
+                  if (e.key === 'Enter' && highlightedSuggestIdx >= 0) {
+                    e.preventDefault();
+                    const chosen = matchingSuggestions[highlightedSuggestIdx];
+                    void addTag(chosen);
+                    return;
+                  }
+                }
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void addTag();
+                }
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  if (showSuggestions && matchingSuggestions.length > 0) {
+                    setShowSuggestions(false);
+                    setHighlightedSuggestIdx(-1);
+                  } else {
+                    setTagEditing(false);
+                    setTagInput('');
+                    setTagError(null);
+                  }
+                }
+              }}
+              onBlur={() => {
+                window.setTimeout(() => setShowSuggestions(false), 150);
+              }}
+            />
+            {showSuggestions && matchingSuggestions.length > 0 && (
+              <div
+                id={autocompleteId}
+                className="hl-tag-autocomplete"
+                role="listbox"
+                aria-label="Suggested tags"
+                data-testid="phone-tag-autocomplete-list"
+              >
+                {matchingSuggestions.map((tag, idx) => {
+                  const isHighlighted = idx === highlightedSuggestIdx;
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      className={`hl-tag-autocomplete-item${isHighlighted ? ' selected' : ''}`}
+                      role="option"
+                      aria-selected={isHighlighted}
+                      data-od-id={`phone-tag-suggest-${tag}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        void addTag(tag);
+                      }}
+                    >
+                      <span className="hl-tag-autocomplete-label">#{tag}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             className="btn sm"
