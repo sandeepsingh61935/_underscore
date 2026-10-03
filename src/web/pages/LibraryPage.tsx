@@ -15,12 +15,9 @@ import { useUpdateHighlightMetadata } from '@/features/collections/hooks/useUpda
 import { libraryEmptyInstallCopy } from '@/shared/copy/product-surface-copy';
 import type { ExportFormat } from '@/shared/highlight-export';
 import { deleteDomainCopy, deleteSectionCopy } from '@/shared/utils/confirm-dialog-copy';
-import {
-  DEFAULT_SEARCH_FIELDS,
-  filterHighlightsByRefineAndTags,
-  toggleTagFilter,
-  type RefineFilter,
-} from '@/shared/utils/highlight-filter';
+import { useFilterStore } from '@/features/collections/stores/filter.store';
+import { aggregateLibrary } from '@/web/lib/aggregateLibrary';
+import { filterHighlightsByRefineAndTags } from '@/shared/utils/highlight-filter';
 import {
   formatMatchBadge,
   searchHighlights,
@@ -263,12 +260,17 @@ export function LibraryPage(): React.ReactElement {
   }, [location.search]);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [query, setQuery] = useState('');
-  const [fields, setFields] = useState<SearchField[]>([...DEFAULT_SEARCH_FIELDS]);
-  const [refine, setRefine] = useState<RefineFilter[]>([]);
-  const [tagFilters, setTagFilters] = useState<string[]>(() =>
-    initialTagFromUrl ? [initialTagFromUrl] : []
-  );
+  const {
+    query,
+    fields,
+    refine,
+    tagFilters,
+    setQuery,
+    setFields,
+    setRefine,
+    setTagFilters,
+    toggleTagFilter: storeToggleTagFilter,
+  } = useFilterStore();
   const [groupFilters, setGroupFilters] = useState<string[]>([]);
   const [sort, setSort] = useState<LibSort>('newest');
   const [sortOpen, setSortOpen] = useState(false);
@@ -286,19 +288,18 @@ export function LibraryPage(): React.ReactElement {
   const [isDeletingScope, setIsDeletingScope] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
-  const seededTagRef = useRef<string | null>(initialTagFromUrl);
+  const seededTagRef = useRef<string | null>(null);
 
   // Apply tag filter when arriving from Home with ?tag=
   useEffect(() => {
     if (!initialTagFromUrl) return;
     if (seededTagRef.current === initialTagFromUrl) return;
     seededTagRef.current = initialTagFromUrl;
-    setTagFilters((prev) => {
-      const lower = initialTagFromUrl.toLowerCase();
-      if (prev.some((t) => t.toLowerCase() === lower)) return prev;
-      return [...prev, initialTagFromUrl];
-    });
-  }, [initialTagFromUrl]);
+    const lower = initialTagFromUrl.toLowerCase();
+    if (!tagFilters.some((t) => t.toLowerCase() === lower)) {
+      setTagFilters([...tagFilters, initialTagFromUrl]);
+    }
+  }, [initialTagFromUrl, tagFilters, setTagFilters]);
 
   // Auto-expand domain when URL points at it
   useEffect(() => {
@@ -463,15 +464,21 @@ export function LibraryPage(): React.ReactElement {
     setSelection,
   ]);
 
-  const handleToggleTagFilter = useCallback((tag: string) => {
-    setTagFilters((prev) => toggleTagFilter(prev, tag));
-  }, []);
+  const handleToggleTagFilter = useCallback(
+    (tag: string) => {
+      storeToggleTagFilter(tag);
+    },
+    [storeToggleTagFilter]
+  );
 
   /** Related tag click = replace single-tag filter (normal tag navigation). */
-  const handleRelatedTag = useCallback((tag: string, rank: number) => {
-    trackEvent('related_tag_clicked', { rank, reason: 'co-occur' });
-    setTagFilters([tag]);
-  }, []);
+  const handleRelatedTag = useCallback(
+    (tag: string, rank: number) => {
+      trackEvent('related_tag_clicked', { rank, reason: 'co-occur' });
+      setTagFilters([tag]);
+    },
+    [setTagFilters]
+  );
 
   const openPage = useCallback(
     (domain: string, path: string) => {
@@ -518,6 +525,26 @@ export function LibraryPage(): React.ReactElement {
     () => buildGroupPageUrlSet(allGroupItems, knownGroupPages, groupFilters),
     [allGroupItems, knownGroupPages, groupFilters]
   );
+
+  const allFilteredHighlights = useMemo(() => {
+    if (!filtering) return lib.highlights;
+    const base = [...lib.highlights].sort(SORT_FNS.newest);
+    const refined = filterHighlightsByRefineAndTags(base.map(toSearchable), {
+      refine,
+      tagFilters,
+      groupUrlSet,
+    });
+    const q = query.trim();
+    if (!q) {
+      return refined as WebHighlight[];
+    }
+    return searchHighlights(refined, q, fields).map((m) => m.highlight as WebHighlight);
+  }, [lib.highlights, filtering, refine, tagFilters, groupUrlSet, query, fields]);
+
+  const visibleDomains = useMemo(() => {
+    if (!filtering) return lib.domains;
+    return aggregateLibrary(allFilteredHighlights).domains;
+  }, [filtering, allFilteredHighlights, lib.domains]);
 
   const refinedHighlights = useMemo(() => {
     const base = [...scoped].sort(SORT_FNS.newest);
@@ -582,6 +609,10 @@ export function LibraryPage(): React.ReactElement {
   }, [query, filtered.length, clientKind]);
 
   const tags = useMemo(() => corpusTags(scoped), [scoped]);
+  const allTagSuggestions = useMemo(
+    () => Array.from(new Set(lib.highlights.flatMap((h) => h.tags || []))),
+    [lib.highlights]
+  );
 
   const relatedness = useRelatednessService(lib.highlights);
   const relatedTagResults = useRelatedTags(relatedness, tagFilters);
@@ -819,6 +850,7 @@ export function LibraryPage(): React.ReactElement {
         }}
         relatedPages={phoneRelated}
         relatedLabel={phoneRelatedLabel}
+        tagSuggestions={allTagSuggestions}
         onOpenRelatedPage={(domain, section, rank, reason) => {
           trackEvent('related_page_clicked', { rank, reason });
           setSelection(domain, section, null);
@@ -962,6 +994,7 @@ export function LibraryPage(): React.ReactElement {
               onTagsChange={consumeOnly ? undefined : handleTagsChange}
               onDelete={consumeOnly ? undefined : handleHighlightDelete}
               clientKind={clientKind}
+              tagSuggestions={allTagSuggestions}
             />
           );
         })}
@@ -1006,8 +1039,8 @@ export function LibraryPage(): React.ReactElement {
             </button>
           </div>
 
-          {lib.domains.map((d) => {
-            const open = !!expanded[d.domain];
+          {visibleDomains.map((d) => {
+            const open = filtering ? expanded[d.domain] !== false : !!expanded[d.domain];
             const activeDom = selection.domain === d.domain && !selection.section;
             return (
               <div key={d.domain} className="tree-group" data-tree-group={d.domain}>
@@ -1055,7 +1088,9 @@ export function LibraryPage(): React.ReactElement {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        setDeleteDomainTarget({ domain: d.domain, count: d.count });
+                        const totalDomainCount =
+                          lib.domains.find((x) => x.domain === d.domain)?.count ?? d.count;
+                        setDeleteDomainTarget({ domain: d.domain, count: totalDomainCount });
                       }}
                     >
                       <TrashIco />
@@ -1092,10 +1127,14 @@ export function LibraryPage(): React.ReactElement {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
+                                const totalSecCount =
+                                  lib.highlights.filter(
+                                    (h) => h.domain === d.domain && (h.path || '/') === s.path
+                                  ).length || s.count;
                                 setDeleteSectionTarget({
                                   domain: d.domain,
                                   path: s.path,
-                                  count: s.count,
+                                  count: totalSecCount,
                                 });
                               }}
                             >
@@ -1111,9 +1150,9 @@ export function LibraryPage(): React.ReactElement {
             );
           })}
 
-          {lib.domains.length === 0 ? (
+          {visibleDomains.length === 0 ? (
             <div className="state-box" style={{ minHeight: 80, padding: 16 }}>
-              <h3>No domains</h3>
+              <h3>{filtering ? 'No matching domains' : 'No domains'}</h3>
             </div>
           ) : null}
         </div>

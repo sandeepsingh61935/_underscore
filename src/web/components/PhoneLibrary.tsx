@@ -75,6 +75,7 @@ export type PhoneLibraryProps = {
     rank: number,
     reason: string
   ) => void;
+  tagSuggestions?: string[];
 };
 
 type DomainGroup = {
@@ -165,6 +166,7 @@ export function PhoneLibrary({
   relatedPages = [],
   relatedLabel = 'Related pages',
   onOpenRelatedPage,
+  tagSuggestions,
 }: PhoneLibraryProps): React.ReactElement {
   const [deleteDomainOpen, setDeleteDomainOpen] = useState(false);
   const [deletingDomain, setDeletingDomain] = useState(false);
@@ -585,6 +587,7 @@ export function PhoneLibrary({
                     onNoteSave={onNoteSave}
                     onTagsChange={onTagsChange}
                     onDelete={onDeleteHighlight}
+                    tagSuggestions={tagSuggestions}
                   />
                 );
               })}

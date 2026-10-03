@@ -60,6 +60,7 @@ vi.mock('@/web/hooks/useWebLibrary', async () => {
 
 import { useApp } from '@/core/context/AppProvider';
 import { clearWebLibrarySessionMemory } from '@/web/hooks/useWebLibrary';
+import { clearFilterStore } from '@/features/collections/stores/filter.store';
 
 const SAMPLE: WebHighlight[] = [
   {
@@ -166,6 +167,7 @@ function renderLibrary(initialPath: string, authenticated = true) {
 describe('LibraryPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearFilterStore();
     clearWebLibrarySessionMemory();
     mockFetch.mockResolvedValue(SAMPLE);
   });
@@ -517,5 +519,103 @@ describe('LibraryPage', () => {
 
     fireEvent.click(syncBtn);
     expect(syncNow).toHaveBeenCalled();
+  });
+
+  it('scoping in rail: selecting a tag filter only shows domains and pages with matching highlights', async () => {
+    mockFetch.mockResolvedValue(SAMPLE);
+    renderLibrary('/library');
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="lib-domain-example-com"]')).toBeTruthy();
+      expect(document.querySelector('[data-od-id="lib-domain-other-org"]')).toBeTruthy();
+    });
+
+    // Both domains appear initially
+    expect(document.querySelector('[data-od-id="lib-domain-example-com"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="lib-domain-other-org"]')).toBeTruthy();
+
+    // Click tag "a" on card h1
+    const tagChip = document.querySelector('[data-od-id="hl-tag-h1-a"]');
+    expect(tagChip).toBeTruthy();
+    fireEvent.click(tagChip!);
+
+    // Rail should scope down: other.org has no 'a' tag, so it must disappear
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="lib-domain-example-com"]')).toBeTruthy();
+      expect(document.querySelector('[data-od-id="lib-domain-other-org"]')).toBeNull();
+    });
+
+    // Under example.com, only /docs has tag 'a'; root / has no 'a' tag so it must not appear
+    expect(document.querySelector('[data-od-id="lib-sec--docs"]')).toBeTruthy();
+    expect(document.querySelector('[data-od-id="lib-sec--"]')).toBeNull();
+  });
+
+  it('filter carry forward: clicking a domain preserves active filter and scopes page content', async () => {
+    mockFetch.mockResolvedValue(SAMPLE);
+    const { router } = renderLibrary('/library');
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="hl-tag-h1-a"]')).toBeTruthy();
+    });
+
+    // Toggle tag "a"
+    fireEvent.click(document.querySelector('[data-od-id="hl-tag-h1-a"]')!);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="lib-domain-other-org"]')).toBeNull();
+    });
+
+    // Click example.com in the rail
+    const domainBtn = document.querySelector('[data-od-id="lib-domain-example-com"]');
+    expect(domainBtn).toBeTruthy();
+    fireEvent.click(domainBtn!);
+
+    await waitFor(() => {
+      expect(router.state.location.search).toBe('?domain=example.com');
+    });
+
+    // Filter must NOT reset: tag 'a' is carried forward, so only h1 is displayed (not all 2 highlights of example.com)
+    expect(document.querySelectorAll('.hl-quote').length).toBe(1);
+    expect(screen.getByText(/Hello library/)).toBeTruthy();
+    expect(screen.queryByText(/Root quote/)).toBeNull();
+
+    // Untoggle tag "a" via the active chip or card tag
+    fireEvent.click(document.querySelector('[data-od-id="hl-tag-h1-a"]')!);
+
+    // Both sections and domains reappear
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="lib-sec--"]')).toBeTruthy();
+      expect(document.querySelector('[data-od-id="lib-sec--docs"]')).toBeTruthy();
+      expect(document.querySelectorAll('.hl-quote').length).toBe(2);
+    });
+  });
+
+  it('filter persistence: filter state persists across re-mounting LibraryPage', async () => {
+    mockFetch.mockResolvedValue(SAMPLE);
+    const { unmount } = renderLibrary('/library');
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-od-id="hl-tag-h1-a"]')).toBeTruthy();
+    });
+
+    // Select tag 'a'
+    fireEvent.click(document.querySelector('[data-od-id="hl-tag-h1-a"]')!);
+
+    await waitFor(() => {
+      expect(document.querySelectorAll('.hl-quote').length).toBe(1);
+    });
+
+    // Unmount view (simulating navigation away to another route)
+    unmount();
+
+    // Remount view (simulating returning to /library)
+    renderLibrary('/library');
+
+    // Filter should still be active from filterStore persistence
+    await waitFor(() => {
+      expect(document.querySelectorAll('.hl-quote').length).toBe(1);
+      expect(screen.getByText(/Hello library/)).toBeTruthy();
+      expect(document.querySelector('[data-od-id="lib-domain-other-org"]')).toBeNull();
+    });
   });
 });
