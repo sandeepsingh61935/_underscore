@@ -22,6 +22,8 @@ import {
   mergeLabelsForHighlight,
 } from '@/shared/services/tag-query-web';
 import { getDomainFromUrl, urlMatchesDomain } from '@/shared/utils/domain-from-url';
+import type { RefineFilter } from '@/shared/utils/highlight-filter';
+import { filterHighlightsByRefineAndTags } from '@/shared/utils/highlight-filter';
 import type { HighlightPresentation } from '@/shared/utils/highlight-presentation';
 import type { SearchField, SearchableHighlight } from '@/shared/utils/highlight-search';
 import { searchHighlights } from '@/shared/utils/highlight-search';
@@ -52,6 +54,8 @@ export interface UseHighlightSearchOptions {
   query: string;
   scope: SearchScope;
   fields?: SearchField[];
+  refine?: RefineFilter[];
+  tagFilters?: string[];
 }
 
 interface HighlightSearchState {
@@ -126,25 +130,35 @@ export function useHighlightSearch(options: UseHighlightSearchOptions): {
   isLoading: boolean;
   error: Error | null;
 } {
-  const { query, scope, fields } = options;
+  const { query, scope, fields, refine = [], tagFilters = [] } = options;
   const [state, setState] = useState<HighlightSearchState>(EMPTY_STATE);
 
   const context = isExtensionContext() ? 'extension' : 'web';
 
-  // Stable value-comparison keys: `scope`/`fields` are frequently re-created
-  // by callers on every render, so we key the callback's identity off their
+  // Stable value-comparison keys: `scope`/`fields`/`refine`/`tagFilters` are frequently
+  // re-created by callers on every render, so we key the callback's identity off their
   // serialized value rather than reference.
   const scopeKey = JSON.stringify(scope);
   const fieldsKey = fields ? JSON.stringify(fields) : '';
+  const refineKey = JSON.stringify(refine);
+  const tagFiltersKey = JSON.stringify(tagFilters);
 
   const searchAction = useIpcAction<
-    { query: string; domain?: string; section?: string; fields?: SearchField[] },
+    {
+      query: string;
+      domain?: string;
+      section?: string;
+      fields?: SearchField[];
+      refine?: RefineFilter[];
+      tagFilters?: string[];
+    },
     SearchHighlightsIpcResponse
   >('SEARCH_HIGHLIGHTS');
 
   const runSearch = useCallback(async () => {
     const trimmed = query.trim();
-    if (!trimmed) {
+    const hasFilter = trimmed.length > 0 || refine.length > 0 || tagFilters.length > 0;
+    if (!hasFilter) {
       setState(EMPTY_STATE);
       return;
     }
@@ -154,7 +168,13 @@ export function useHighlightSearch(options: UseHighlightSearchOptions): {
     try {
       if (context === 'extension') {
         const filters = scopeToFilters(scope);
-        const ipcResult = await searchAction({ query: trimmed, ...filters, fields });
+        const ipcResult = await searchAction({
+          query: trimmed,
+          ...filters,
+          fields,
+          refine,
+          tagFilters,
+        });
 
         if (!ipcResult.success) {
           throw new Error(ipcResult.error || 'Failed to search highlights');
@@ -247,7 +267,21 @@ export function useHighlightSearch(options: UseHighlightSearchOptions): {
           });
         }
 
-        const matches = searchHighlights(rows, trimmed, fields);
+        const filteredByRefineAndTags = filterHighlightsByRefineAndTags(rows, {
+          refine,
+          tagFilters,
+        });
+
+        let matches: Array<{ highlight: WebSearchableHighlight; matchedFields: SearchField[] }>;
+        if (trimmed) {
+          matches = searchHighlights(filteredByRefineAndTags, trimmed, fields);
+        } else {
+          matches = filteredByRefineAndTags.map((h) => ({
+            highlight: h,
+            matchedFields: [],
+          }));
+        }
+
         const results: HighlightSearchResult[] = matches.map((m) => ({
           id: m.highlight.id,
           text: m.highlight.text,
@@ -272,10 +306,7 @@ export function useHighlightSearch(options: UseHighlightSearchOptions): {
         error: err instanceof Error ? err : new Error('Failed to search highlights'),
       });
     }
-    // scope/fields are captured by value via scopeKey/fieldsKey below; the
-    // callback identity (and therefore the effect) only changes when those
-    // serialized values change, not on every re-render.
-  }, [query, scopeKey, fieldsKey, context, searchAction]);
+  }, [query, scopeKey, fieldsKey, refineKey, tagFiltersKey, context, searchAction]);
 
   useEffect(() => {
     let cancelled = false;

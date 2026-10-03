@@ -56,6 +56,8 @@ export interface HighlightSearchBarProps {
   /** Optional controlled open state for the filter panel. */
   filterOpen?: boolean;
   onFilterOpenChange?: (open: boolean) => void;
+  /** Optional trailing actions (e.g. scope toolbar) placed alongside the search input row */
+  actions?: React.ReactNode;
 }
 
 const DEBOUNCE_MS = 250;
@@ -91,6 +93,7 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
     disabled = false,
     filterOpen: filterOpenProp,
     onFilterOpenChange,
+    actions,
   } = props;
 
   const [inputValue, setInputValue] = useState(query);
@@ -199,40 +202,51 @@ export function HighlightSearchBar(props: HighlightSearchBarProps): React.ReactE
 
   return (
     <div className="search-bar" style={{ opacity: disabled ? 0.5 : 1 }}>
-      <div className="search-input-row">
-        <span className="glyph" aria-hidden="true">
-          ⌕
-        </span>
-        <input
-          type="text"
-          value={inputValue}
-          onChange={handleInputChange}
-          placeholder={placeholder}
-          aria-label="Search"
-          disabled={disabled}
-        />
-        {inputValue.length > 0 && (
+      <div
+        className="search-row-container"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          minWidth: 0,
+        }}
+      >
+        <div className="search-input-row" style={{ flex: 1, minWidth: 0 }}>
+          <span className="glyph" aria-hidden="true">
+            ⌕
+          </span>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={handleInputChange}
+            placeholder={placeholder}
+            aria-label="Search"
+            disabled={disabled}
+          />
+          {inputValue.length > 0 && (
+            <button
+              type="button"
+              className="clear"
+              aria-label="Clear"
+              onClick={handleClearQuery}
+              disabled={disabled}
+            >
+              ×
+            </button>
+          )}
           <button
             type="button"
-            className="clear"
-            aria-label="Clear"
-            onClick={handleClearQuery}
+            className={`search-filter-btn${filterOpen ? ' open' : ''}${hasFilters ? ' has-filters' : ''}`}
+            aria-label="Filters"
+            aria-expanded={filterOpen}
             disabled={disabled}
+            onClick={() => setFilterOpen(!filterOpen)}
           >
-            ×
+            Filters
+            {activeN > 0 ? <span className="fcount">{activeN}</span> : null}
           </button>
-        )}
-        <button
-          type="button"
-          className={`search-filter-btn${filterOpen ? ' open' : ''}${hasFilters ? ' has-filters' : ''}`}
-          aria-label="Filters"
-          aria-expanded={filterOpen}
-          disabled={disabled}
-          onClick={() => setFilterOpen(!filterOpen)}
-        >
-          Filters
-          {activeN > 0 ? <span className="fcount">{activeN}</span> : null}
-        </button>
+        </div>
+        {actions}
       </div>
 
       {activeN > 0 && (

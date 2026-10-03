@@ -199,4 +199,14 @@ describe('HighlightSearchBar', () => {
     fireEvent.click(screen.getByRole('button', { name: '#css' }));
     expect(props.onTagFiltersChange).toHaveBeenCalledWith(['css']);
   });
+
+  it('renders actions slot alongside the search input row', () => {
+    render(
+      <HighlightSearchBar
+        {...baseProps()}
+        actions={<button type="button">Custom Action</button>}
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Custom Action' })).toBeInTheDocument();
+  });
 });

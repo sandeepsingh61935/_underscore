@@ -108,8 +108,6 @@ export function LibrarySortControl({
             border: '1px solid var(--rule-soft, var(--border))',
             borderRadius: 'var(--r-sm, 8px)',
             background: 'var(--paper)',
-            boxShadow:
-              'var(--shadow-md, 0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent))',
             display: 'flex',
             flexDirection: 'column',
             gap: 2,

@@ -76,7 +76,7 @@ export function LibraryHighlightTile({
   allowMarginalia = false,
   isExpanded: _isExpanded = false,
   onToggleExpand: _onToggleExpand,
-  suggestions: _suggestions,
+  suggestions,
   matchBadge,
   isUnanchored = false,
   onReanchor,
@@ -178,6 +178,7 @@ export function LibraryHighlightTile({
         tags={highlight.tags}
         onSaveNotes={allowMarginalia ? onSaveNotes : undefined}
         onSaveTags={allowMarginalia ? onSaveTags : undefined}
+        tagSuggestions={suggestions}
         matchBadge={matchBadge}
         isUnanchored={isUnanchored}
         onReanchor={onReanchor}

@@ -3,6 +3,7 @@
  * Path is identity; tools never share the title row.
  */
 import React, { type ReactNode } from 'react';
+import { ExternalLink, Trash2 } from 'lucide-react';
 
 import {
   ExportActions,
@@ -18,43 +19,16 @@ export type LibraryScopeChromeProps = {
   exportScope: ExportViewScope;
   exportDisabled?: boolean;
   onDelete?: () => void;
-  deleteAriaLabel: string;
+  deleteAriaLabel?: string;
+  showDelete?: boolean;
   onOpenPage?: () => void;
   sort: LibrarySortKey;
   onSortChange: (next: LibrarySortKey) => void;
-  /** Search + filters slot (full flex of instrument bar) */
-  searchSlot: ReactNode;
+  /** Search + filters slot (full flex of instrument bar or render function receiving toolbar) */
+  searchSlot: ReactNode | ((toolbar: ReactNode) => ReactNode);
   testId?: string;
   toolbarTestId?: string;
 };
-
-function IconExternalLink(): React.ReactElement {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M10 2.5h3.5v3.5M6.5 9.5l7-7M11.5 8.5v4a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h4"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function IconTrash(): React.ReactElement {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M3.5 4.5h9M6 4.5V3.5h4v1M5.5 4.5l.5 8h4l.5-8"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 export function LibraryScopeChrome({
   title,
@@ -63,6 +37,7 @@ export function LibraryScopeChrome({
   exportDisabled,
   onDelete,
   deleteAriaLabel,
+  showDelete = false,
   onOpenPage,
   sort,
   onSortChange,
@@ -73,6 +48,51 @@ export function LibraryScopeChrome({
   const countLabel =
     highlightCount === 1 ? '1 highlight' : `${highlightCount} highlights`;
 
+  const toolbar =
+    highlightCount > 0 ? (
+      <div
+        className="scope-toolbar"
+        data-testid={toolbarTestId}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          flexShrink: 0,
+        }}
+      >
+        <ExportActions
+          scope={exportScope}
+          highlightCount={highlightCount}
+          disabled={exportDisabled}
+          variant="icon"
+        />
+        {onOpenPage ? (
+          <button
+            type="button"
+            className="sr-icon"
+            aria-label="Open page in new browser tab"
+            title="Open page in new browser tab"
+            onClick={onOpenPage}
+            style={{ minWidth: 32, minHeight: 32 }}
+          >
+            <ExternalLink size={16} aria-hidden="true" />
+          </button>
+        ) : null}
+        {showDelete && onDelete ? (
+          <button
+            type="button"
+            className="sr-icon is-delete"
+            aria-label={deleteAriaLabel || 'Delete'}
+            title={deleteAriaLabel || 'Delete'}
+            onClick={onDelete}
+            style={{ minWidth: 32, minHeight: 32 }}
+          >
+            <Trash2 size={16} aria-hidden="true" />
+          </button>
+        ) : null}
+      </div>
+    ) : null;
+
   return (
     <div
       data-testid={testId}
@@ -82,28 +102,54 @@ export function LibraryScopeChrome({
         background: 'var(--paper)',
       }}
     >
-      {/* Identity — never shares row with tools */}
-      <div style={{ padding: '12px 16px 8px' }}>
-        <h2
-          className="u-serif"
-          title={title}
-          style={{
-            margin: 0,
-            fontSize: 'var(--step-2)',
-            letterSpacing: '-0.02em',
-            lineHeight: 1.2,
-            color: 'var(--ink)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {title}
-        </h2>
+      {/* Identity row with scope tools on the right */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          padding: '12px 16px 8px',
+        }}
+      >
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <h2
+            className="u-serif"
+            title={title}
+            style={{
+              margin: 0,
+              fontSize: 'var(--step-2)',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.2,
+              color: 'var(--ink)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {title}
+          </h2>
+        </div>
+        {toolbar}
+      </div>
+
+      {/* Spacious Search bar — full width */}
+      <div style={{ padding: '0 16px 8px', minWidth: 0 }}>
+        {typeof searchSlot === 'function' ? searchSlot(null) : searchSlot}
+      </div>
+
+      {/* Counter on opposite end of sort control */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 16px 10px',
+        }}
+      >
         <div
           className="u-mono"
           style={{
-            marginTop: 4,
             fontSize: 'var(--step--2)',
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
@@ -113,70 +159,7 @@ export function LibraryScopeChrome({
         >
           {countLabel}
         </div>
-      </div>
-
-      {/* One instrument bar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '0 16px 8px',
-          minWidth: 0,
-        }}
-      >
-        <div style={{ flex: 1, minWidth: 0 }}>{searchSlot}</div>
-        {highlightCount > 0 ? (
-          <div
-            className="scope-toolbar"
-            data-testid={toolbarTestId}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              flexShrink: 0,
-              paddingLeft: 8,
-              borderLeft: '1px solid var(--rule-soft)',
-              minHeight: 32,
-            }}
-          >
-            <ExportActions
-              scope={exportScope}
-              highlightCount={highlightCount}
-              disabled={exportDisabled}
-              variant="menu"
-            />
-            {onOpenPage ? (
-              <button
-                type="button"
-                className="sr-icon"
-                aria-label="Open page in new browser tab"
-                title="Open page"
-                onClick={onOpenPage}
-                style={{ minWidth: 32, minHeight: 32 }}
-              >
-                <IconExternalLink />
-              </button>
-            ) : null}
-            {onDelete ? (
-              <button
-                type="button"
-                className="sr-icon is-delete"
-                aria-label={deleteAriaLabel}
-                title={deleteAriaLabel}
-                onClick={onDelete}
-                style={{ minWidth: 32, minHeight: 32 }}
-              >
-                <IconTrash />
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      {/* Quiet sort — mono text, no slab */}
-      <div style={{ padding: '0 16px 10px' }}>
-        <LibrarySortControl value={sort} onChange={onSortChange} variant="text" />
+        <LibrarySortControl value={sort} onChange={onSortChange} variant="text" align="right" />
       </div>
     </div>
   );

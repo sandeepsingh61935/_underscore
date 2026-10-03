@@ -28,7 +28,6 @@ describe('LibraryScopeChrome', () => {
 
   it('renders onOpenPage button in scope toolbar and calls callback on click', () => {
     const onOpenPage = vi.fn();
-    const onDelete = vi.fn();
 
     render(
       <LibraryScopeChrome
@@ -36,7 +35,6 @@ describe('LibraryScopeChrome', () => {
         highlightCount={2}
         exportScope={{ kind: 'section', domain: 'example.com', sectionKey: '/docs' }}
         onOpenPage={onOpenPage}
-        onDelete={onDelete}
         deleteAriaLabel="Delete section"
         sort="newest"
         onSortChange={vi.fn()}
@@ -48,6 +46,39 @@ describe('LibraryScopeChrome', () => {
     expect(openBtn).toBeInTheDocument();
     fireEvent.click(openBtn);
     expect(onOpenPage).toHaveBeenCalledOnce();
+  });
+
+  it('renders onDelete button only when showDelete is true', () => {
+    const onDelete = vi.fn();
+
+    const { rerender } = render(
+      <LibraryScopeChrome
+        title="example.com/docs"
+        highlightCount={2}
+        exportScope={{ kind: 'section', domain: 'example.com', sectionKey: '/docs' }}
+        onDelete={onDelete}
+        deleteAriaLabel="Delete section"
+        sort="newest"
+        onSortChange={vi.fn()}
+        searchSlot={<div>search</div>}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: /Delete section/i })).toBeNull();
+
+    rerender(
+      <LibraryScopeChrome
+        title="example.com/docs"
+        highlightCount={2}
+        exportScope={{ kind: 'section', domain: 'example.com', sectionKey: '/docs' }}
+        onDelete={onDelete}
+        deleteAriaLabel="Delete section"
+        showDelete={true}
+        sort="newest"
+        onSortChange={vi.fn()}
+        searchSlot={<div>search</div>}
+      />
+    );
 
     const deleteBtn = screen.getByRole('button', { name: /Delete section/i });
     expect(deleteBtn).toBeInTheDocument();
@@ -71,5 +102,27 @@ describe('LibraryScopeChrome', () => {
     expect(
       screen.queryByRole('button', { name: /Open page in new browser tab/i })
     ).toBeNull();
+  });
+
+  it('renders function searchSlot receiving the toolbar element', () => {
+    render(
+      <LibraryScopeChrome
+        title="example.com/docs"
+        highlightCount={2}
+        exportScope={{ kind: 'section', domain: 'example.com', sectionKey: '/docs' }}
+        deleteAriaLabel="Delete section"
+        sort="newest"
+        onSortChange={vi.fn()}
+        searchSlot={(toolbar) => (
+          <div data-testid="custom-search">
+            search input
+            {toolbar}
+          </div>
+        )}
+      />
+    );
+
+    expect(screen.getByTestId('custom-search')).toBeInTheDocument();
+    expect(screen.getByTestId('export-actions-mock')).toBeInTheDocument();
   });
 });

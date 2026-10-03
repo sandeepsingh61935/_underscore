@@ -1,3 +1,4 @@
+import { Download } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
 import {
@@ -15,10 +16,11 @@ export interface ExportActionsProps {
   disabled?: boolean;
   highlightCount?: number;
   /**
-   * `menu` — single Export control (default, space-saving).
+   * `menu` — single Export text control.
+   * `icon` — single Download icon control (space-saving for headers/toolbars).
    * `inline` — MD | XLSX chips (settings/dialogs).
    */
-  variant?: 'menu' | 'inline';
+  variant?: 'menu' | 'inline' | 'icon';
 }
 
 const FORMATS: { id: ExportFormat; label: string; aria: string }[] = [
@@ -96,6 +98,8 @@ export function ExportActions({
     );
   }
 
+  const isIcon = variant === 'icon';
+
   return (
     <div
       ref={ref}
@@ -103,38 +107,59 @@ export function ExportActions({
       data-testid="export-actions"
       style={{ position: 'relative', flexShrink: 0 }}
     >
-      <button
-        type="button"
-        className="u-mono"
-        data-testid="export-menu-trigger"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={`Export ${label}`}
-        disabled={isDisabled}
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          all: 'unset',
-          cursor: isDisabled ? 'default' : 'pointer',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4,
-          minHeight: 32,
-          padding: '0 10px',
-          border: '1px solid var(--rule-soft)',
-          fontSize: 'var(--step--2)',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          color: isDisabled ? 'var(--ink-4)' : 'var(--ink-2)',
-          background: 'var(--paper)',
-          boxSizing: 'border-box',
-        }}
-      >
-        {isBusy ? <Spinner size="sm" /> : null}
-        Export
-        <span aria-hidden style={{ color: 'var(--ink-4)' }}>
-          ▾
-        </span>
-      </button>
+      {isIcon ? (
+        <button
+          type="button"
+          className="sr-icon"
+          data-testid="export-menu-trigger"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`Export ${label}`}
+          title={`Export ${label}`}
+          disabled={isDisabled}
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            cursor: isDisabled ? 'not-allowed' : 'pointer',
+            opacity: isDisabled ? 0.4 : 1,
+          }}
+        >
+          {isBusy ? <Spinner size="sm" /> : <Download size={16} aria-hidden="true" />}
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="u-mono"
+          data-testid="export-menu-trigger"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`Export ${label}`}
+          disabled={isDisabled}
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            all: 'unset',
+            cursor: isDisabled ? 'default' : 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            minHeight: 32,
+            padding: '0 10px',
+            border: '1px solid var(--rule-soft)',
+            borderRadius: 'var(--radius)',
+            fontSize: 'var(--step--2)',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: isDisabled ? 'var(--ink-4)' : 'var(--ink-2)',
+            background: 'var(--paper)',
+            boxSizing: 'border-box',
+          }}
+        >
+          {isBusy ? <Spinner size="sm" /> : null}
+          Export
+          <span aria-hidden style={{ color: 'var(--ink-4)' }}>
+            ▾
+          </span>
+        </button>
+      )}
       {open && !isBusy ? (
         <div
           role="menu"
@@ -145,9 +170,13 @@ export function ExportActions({
             marginTop: 4,
             zIndex: 30,
             minWidth: 140,
-            border: '1px solid var(--rule)',
+            padding: 4,
+            border: '1px solid var(--rule-soft)',
+            borderRadius: 'var(--radius)',
             background: 'var(--paper)',
-            boxShadow: '0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
           }}
         >
           {FORMATS.map((format) => (
@@ -155,7 +184,7 @@ export function ExportActions({
               key={format.id}
               type="button"
               role="menuitem"
-              className="u-mono"
+              className="u-mono export-menu-item"
               onClick={() => {
                 setOpen(false);
                 void exportFile(format.id);
@@ -166,11 +195,13 @@ export function ExportActions({
                 display: 'block',
                 width: '100%',
                 boxSizing: 'border-box',
-                padding: '10px 12px',
+                padding: '8px 10px',
+                borderRadius: 'var(--radius)',
                 fontSize: 'var(--step--2)',
                 letterSpacing: '0.06em',
                 textTransform: 'uppercase',
                 color: 'var(--ink-2)',
+                transition: 'background 120ms ease, color 120ms ease',
               }}
             >
               {format.label}
