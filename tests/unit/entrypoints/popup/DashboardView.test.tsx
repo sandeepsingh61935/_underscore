@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 
 import { DashboardView } from '@/entrypoints/popup/views/DashboardView';
@@ -38,6 +38,7 @@ const baseTab = {
   domain: 'en.wikipedia.org',
   path: '/wiki/Article',
   title: 'Article - Wikipedia',
+  incognito: false,
 };
 
 function mockGuestEmpty(): void {
