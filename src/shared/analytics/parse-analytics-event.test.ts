@@ -32,4 +32,57 @@ describe('parseAnalyticsEvent', () => {
       expect(r.props).not.toHaveProperty('q');
     }
   });
+
+  it('accepts allowlisted group events with safe props', () => {
+    const itemAdded = parseAnalyticsEvent({
+      name: 'group_item_added',
+      props: { kind: 'page' },
+    });
+    expect(itemAdded).toEqual({
+      ok: true,
+      name: 'group_item_added',
+      props: { kind: 'page' },
+    });
+
+    const syncEnabled = parseAnalyticsEvent({
+      name: 'browser_sync_enabled',
+      props: { client: 'extension' },
+    });
+    expect(syncEnabled).toEqual({
+      ok: true,
+      name: 'browser_sync_enabled',
+      props: { client: 'extension' },
+    });
+
+    const opened = parseAnalyticsEvent({
+      name: 'group_opened_in_browser',
+      props: { tabCount: 5, browser: 'chrome' },
+    });
+    expect(opened).toEqual({
+      ok: true,
+      name: 'group_opened_in_browser',
+      props: { tabCount: 5, browser: 'chrome' },
+    });
+  });
+
+  it('strictly rejects URL, hostname, name, and title props for privacy', () => {
+    const r = parseAnalyticsEvent({
+      name: 'group_created',
+      props: {
+        name: 'Private Project Alpha',
+        url: 'https://secret.com/page',
+        hostname: 'secret.com',
+        title: 'Secret Document',
+        client: 'popup',
+      },
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.props).toEqual({ client: 'popup' });
+      expect(r.props).not.toHaveProperty('name');
+      expect(r.props).not.toHaveProperty('url');
+      expect(r.props).not.toHaveProperty('hostname');
+      expect(r.props).not.toHaveProperty('title');
+    }
+  });
 });
