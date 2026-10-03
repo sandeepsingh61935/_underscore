@@ -766,38 +766,6 @@ describe('SupabaseClient', () => {
   });
 
   describe('Bonus: Null/undefined fields handled gracefully', () => {
-    it('should handle highlight with no description field', async () => {
-      // Arrange
-      const mockInsert = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'col-1',
-              name: 'Test Collection',
-              description: null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            error: null,
-          }),
-        }),
-      });
-      mockSupabaseClient.from.mockReturnValue({
-        insert: mockInsert,
-      });
-
-      // Act
-      const result = await client.createCollection('Test Collection');
-
-      // Assert
-      expect(result.description).toBeUndefined();
-      expect(mockInsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          description: null,
-        })
-      );
-    });
-
     it('should ignore undefined fields in partial update', async () => {
       // Arrange
       const updates: Partial<HighlightDataV2> = {
@@ -849,16 +817,15 @@ describe('SupabaseClient', () => {
       const query = client.supabase
         .from('pg_policies')
         .select('schemaname,tablename,policyname,cmd,roles')
-        .in('tablename', ['highlights', 'sync_events', 'collections']);
+        .in('tablename', ['highlights', 'sync_events']);
 
       // The chain returns the same shape we used in production.
       await query;
 
-      // `in` was called with all three protected table names.
+      // `in` was called with all protected table names.
       expect(chain['in']).toHaveBeenCalledWith('tablename', [
         'highlights',
         'sync_events',
-        'collections',
       ]);
     });
 
@@ -889,7 +856,7 @@ describe('SupabaseClient', () => {
       const warnCalls = (mockLogger.warn as ReturnType<typeof vi.fn>).mock.calls;
       const allWarnMessages = warnCalls.flat().map(String).join(' | ');
       expect(allWarnMessages).toMatch(
-        /RLS policy gap|highlights|sync_events|collections/
+        /RLS policy gap|highlights|sync_events/
       );
     });
 
@@ -967,13 +934,6 @@ describe('SupabaseClient', () => {
           cmd,
           roles: ['authenticated'],
         })),
-        // collections
-        ...['SELECT', 'INSERT', 'UPDATE', 'DELETE'].map((cmd) => ({
-          tablename: 'collections',
-          policyname: `collections_${cmd.toLowerCase()}_own`,
-          cmd,
-          roles: ['authenticated'],
-        })),
       ];
 
       mockSupabaseClient.from.mockImplementation(() => {
@@ -1010,7 +970,6 @@ describe('SupabaseClient', () => {
         data: [
           { table_name: 'highlights', rls_enabled: true, policy_count: 4 },
           { table_name: 'sync_events', rls_enabled: true, policy_count: 2 },
-          { table_name: 'collections', rls_enabled: true, policy_count: 4 },
         ],
         error: null,
       }));
@@ -1037,7 +996,6 @@ describe('SupabaseClient', () => {
         data: [
           { table_name: 'highlights', rls_enabled: true, policy_count: 1 },
           { table_name: 'sync_events', rls_enabled: false, policy_count: 0 },
-          { table_name: 'collections', rls_enabled: true, policy_count: 4 },
         ],
         error: null,
       }));

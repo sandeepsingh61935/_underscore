@@ -25,8 +25,6 @@ describe('ResilientAPIClient', () => {
       getHighlights: vi.fn(),
       pushEvents: vi.fn(),
       pullEvents: vi.fn(),
-      createCollection: vi.fn(),
-      getCollections: vi.fn(),
     } as unknown as IAPIClient;
 
     mockLogger = {

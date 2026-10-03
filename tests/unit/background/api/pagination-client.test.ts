@@ -18,8 +18,6 @@ const mockAPIClient: IAPIClient = {
   updateHighlight: vi.fn(),
   deleteHighlight: vi.fn(),
   getHighlights: vi.fn(),
-  createCollection: vi.fn(),
-  getCollections: vi.fn(),
 };
 
 // Mock logger
