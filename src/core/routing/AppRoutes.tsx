@@ -24,6 +24,7 @@ import { TermsPage } from '@/pages/TermsPage';
 import { ExtensionPresenceBoot } from '@/web/guards/ExtensionPresenceBoot';
 import { HandheldAuthGate } from '@/web/guards/HandheldAuthGate';
 import { WebAppShell } from '@/web/layout/WebAppShell';
+import { GroupsPage } from '@/web/pages/GroupsPage';
 import { HomePage } from '@/web/pages/HomePage';
 import { LibraryPage } from '@/web/pages/LibraryPage';
 import { WebSettingsPage } from '@/web/pages/WebSettingsPage';
@@ -68,6 +69,11 @@ function LegacyDomainRedirect(): React.JSX.Element {
   return <Navigate to={target} replace />;
 }
 
+function LegacyLibraryGroupRedirect(): React.JSX.Element {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={id ? `/groups/${id}` : '/groups'} replace />;
+}
+
 export function AppRoutes() {
   const dataProvider = new WebDataProviderAdapter();
 
@@ -102,6 +108,10 @@ export function AppRoutes() {
                   <Route element={<WebAppShell />}>
                     <Route path="/home" element={<HomePage />} />
                     <Route path="/library" element={<LibraryPage />} />
+                    <Route path="/groups" element={<GroupsPage />} />
+                    <Route path="/groups/:id" element={<GroupsPage />} />
+                    <Route path="/library/groups/:id" element={<LegacyLibraryGroupRedirect />} />
+                    <Route path="/library/groups" element={<Navigate to="/groups" replace />} />
                     <Route path="/settings" element={<WebSettingsPage />} />
                     <Route path="/ask" element={<Navigate to="/home" replace />} />
                     <Route path="/ask/*" element={<Navigate to="/home" replace />} />

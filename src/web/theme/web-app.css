@@ -1718,7 +1718,7 @@ button.nav-item,
 /* ── Mobile tabbar ────────────────────────────────────────── */
 .tabbar {
   display: none;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--paper) 94%, transparent);
   padding: 0 4px env(safe-area-inset-bottom, 0);
@@ -2260,6 +2260,116 @@ button.nav-item,
 .lib-search-wrap .search-input-row {
   box-sizing: border-box;
   width: 100%;
+}
+
+.lib-group-breadcrumb-wrap {
+  margin-bottom: 16px;
+}
+
+.lib-group-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: var(--paper-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.lib-group-breadcrumb-clear {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+  color: var(--ink-3);
+  font-size: var(--step--1);
+  line-height: 1;
+}
+
+.lib-group-breadcrumb-clear:hover {
+  background: var(--rule-soft);
+  color: var(--ink);
+}
+
+.lib-group-add-wrap {
+  margin-bottom: 20px;
+}
+
+.group-add-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--paper);
+  overflow: hidden;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.group-add-card:hover {
+  border-color: var(--rule);
+}
+
+.group-add-card-toggle {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--paper);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.group-add-card-toggle.is-open {
+  background: var(--paper-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.group-add-card-toggle:hover {
+  background: var(--paper-2);
+}
+
+.group-add-card-body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.group-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  background: transparent;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.group-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.group-suggestion-item:hover,
+.group-suggestion-item[aria-selected="true"] {
+  background: var(--paper-2);
+}
+
+.group-swatch-slot {
+  width: var(--tree-ico, 24px);
+  height: var(--tree-ico, 24px);
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: var(--paper-2);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .lib-main-body {
@@ -2854,6 +2964,47 @@ button.nav-item,
   min-height: 34px;
 }
 
+.tree-row.is-group-item {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 2px;
+  min-height: 34px;
+  padding-left: 14px;
+  box-sizing: border-box;
+}
+
+.tree-row.is-group-item > .tree-item {
+  min-height: 34px;
+  padding: 4px 6px;
+  gap: 8px;
+}
+
+.tree-row.is-group-page {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 4px;
+  min-height: 30px;
+  padding-left: 36px;
+  box-sizing: border-box;
+}
+
+.tree-row.is-group-page > .tree-item {
+  min-height: 30px;
+  padding: 3px 6px;
+  gap: 6px;
+}
+
+.tree-page-ico {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+
 .tree-delete {
   flex-shrink: 0;
   opacity: 0;
@@ -2863,9 +3014,44 @@ button.nav-item,
     background 140ms ease;
 }
 
+.tree-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.tree-more {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.tree-more:hover {
+  background: var(--paper-3);
+  color: var(--ink);
+}
+
 .tree-row:hover .tree-delete,
 .tree-row:focus-within .tree-delete,
-.tree-delete:focus-visible {
+.tree-delete:focus-visible,
+.tree-row:hover .tree-actions,
+.tree-row:focus-within .tree-actions,
+.tree-actions:focus-within {
   opacity: 1;
 }
 
