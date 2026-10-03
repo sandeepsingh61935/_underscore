@@ -11,7 +11,7 @@ export function PrivacyPage(): React.ReactElement {
     <div className="public-legal">
       <article className="public-legal__article">
         <h1 className="u-serif public-legal__title">Privacy Policy</h1>
-        <p className="u-mono public-legal__meta">Last updated: August 2026</p>
+        <p className="u-mono public-legal__meta">Last updated: September 2026</p>
 
         <div
           style={{
@@ -34,7 +34,8 @@ export function PrivacyPage(): React.ReactElement {
             <strong style={{ color: 'var(--accent)' }}>TL;DR</strong> — Guest mode keeps
             highlights on your device. When you create an account and use cloud features,
             we store the data you save so it can sync across devices. We do not sell your
-            highlights or browsing history. You can export or delete your data.
+            highlights or browsing history. Browser tab group sync is optional, mirrors only grouped tabs,
+            and never sends ungrouped tabs or incognito browsing. You can export or delete your data anytime.
           </p>
         </div>
 
@@ -57,6 +58,13 @@ export function PrivacyPage(): React.ReactElement {
               <strong>Highlight and library data you save</strong> — selected text, notes,
               page URLs/titles, collections/metadata, and related timestamps when you use
               persistence beyond pure on-device Guest use.
+            </li>
+            <li>
+              <strong>Browser tab groups (optional)</strong> — if you enable browser tab group
+              mirroring in Settings, tab titles and URLs in your synced browser tab groups
+              are saved to your Underscore groups and synced to your account when signed in.
+              Ungrouped open tabs and incognito or private windows are never sent to our servers
+              or saved to the cloud.
             </li>
             <li>
               <strong>Billing data</strong> — if you subscribe, payment is processed by
@@ -87,6 +95,11 @@ export function PrivacyPage(): React.ReactElement {
               you can access them across sessions and devices.
             </li>
             <li>
+              <strong>Browser tab group sync</strong> — optional feature requiring explicit
+              permission. Only tabs assigned to browser tab groups you choose to sync are mirrored.
+              Ungrouped open tabs and incognito browsing are never monitored, sent, or synced.
+            </li>
+            <li>
               <strong>Paid features</strong> — optional paid plans may unlock additional
               capabilities (for example higher limits or AI-related features). Using those
               features may send the inputs you choose (such as selected highlights or
@@ -99,8 +112,8 @@ export function PrivacyPage(): React.ReactElement {
           <ul>
             <li>We do not sell your personal data or highlight library.</li>
             <li>
-              We do not collect your full browsing history — only pages and passages you
-              explicitly save or actions you take in the product.
+              We do not collect your full browsing history or ungrouped tabs — only pages and passages you
+              explicitly save, tab groups you choose to mirror, or actions you take in the product. Incognito and private windows are never included.
             </li>
             <li>
               We do not claim end-to-end encryption of highlight text before upload. Cloud

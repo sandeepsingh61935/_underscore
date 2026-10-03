@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/core/context/AppProvider';
 import { DeleteConfirmDialog } from '@/features/collections/components/DeleteConfirmDialog';
 import { BtnText } from '@/ui-system/components/primitives/BtnText';
+import { Switch } from '@/ui-system/components/primitives/Switch';
 import { ConnectToAiFlow } from '@/features/settings/components/ConnectToAiFlow';
 import { LibraryPulse } from '@/features/settings/components/LibraryPulse';
 import { SettingsKeyboardSection } from '@/features/settings/components/SettingsKeyboardSection';
@@ -72,6 +73,36 @@ export function PhoneSettings({
   const [signingOut, setSigningOut] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const [tabSyncEnabled, setTabSyncEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('underscore_browser_tab_sync_enabled') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [autoSyncNewGroups, setAutoSyncNewGroups] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem('underscore_auto_sync_new_tab_groups');
+      return stored !== null ? stored === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const handleToggleTabSync = (checked: boolean): void => {
+    setTabSyncEnabled(checked);
+    try {
+      localStorage.setItem('underscore_browser_tab_sync_enabled', String(checked));
+    } catch {}
+  };
+
+  const handleToggleAutoSync = (checked: boolean): void => {
+    setAutoSyncNewGroups(checked);
+    try {
+      localStorage.setItem('underscore_auto_sync_new_tab_groups', String(checked));
+    } catch {}
+  };
 
   const now = Date.now();
   const todayStart = useMemo(() => {
@@ -334,6 +365,64 @@ export function PhoneSettings({
               </button>
             </span>
           </div>
+        </div>
+
+        <div
+          data-testid="settings-section-tab-groups"
+          data-od-id="settings-section-tab-groups"
+        >
+          <div
+            className="u-caps"
+            data-testid="settings-section-tab-groups-title"
+            style={{ padding: '10px 16px 4px', color: 'var(--ink-3)' }}
+          >
+            Browser tab groups
+          </div>
+          <div
+            className="row"
+            style={{ cursor: 'default' }}
+            data-od-id="settings-tab-groups-row"
+            data-testid="settings-tab-groups-row"
+          >
+            <div>
+              <div className="title">Browser tab groups</div>
+              <div className="sub" data-testid="settings-tab-groups-status">
+                Mirror tab groups in your browser with Underscore groups. Incognito is never included.
+                <span style={{ display: 'block', marginTop: 2 }}>
+                  Mirror status: {tabSyncEnabled ? 'Active' : 'Off'}
+                </span>
+              </div>
+            </div>
+            <span className="row-end">
+              <Switch
+                checked={tabSyncEnabled}
+                onCheckedChange={handleToggleTabSync}
+                data-testid="settings-tab-groups-toggle"
+                aria-label="Browser tab groups"
+              />
+            </span>
+          </div>
+          {tabSyncEnabled ? (
+            <div
+              className="row"
+              style={{ cursor: 'default' }}
+              data-od-id="settings-tab-groups-auto-sync-row"
+              data-testid="settings-tab-groups-auto-sync-row"
+            >
+              <div>
+                <div className="title">Automatically sync new browser tab groups</div>
+                <div className="sub">Mirror status: Active</div>
+              </div>
+              <span className="row-end">
+                <Switch
+                  checked={autoSyncNewGroups}
+                  onCheckedChange={handleToggleAutoSync}
+                  data-testid="settings-tab-groups-auto-sync-toggle"
+                  aria-label="Automatically sync new browser tab groups"
+                />
+              </span>
+            </div>
+          ) : null}
         </div>
 
         <div data-od-id="settings-section-integrations">
