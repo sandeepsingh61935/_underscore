@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+import {
+  GroupColorSchema,
+  PageGroupItemSchema,
+  PageGroupSchema,
+} from '@/shared/schemas/page-group-schema';
+
 /**
  * Valid message targets in Chrome extension
  * - 'background': Background service worker
@@ -40,11 +46,25 @@ export const MessageResponseSchema = z.discriminatedUnion('success', [
     code: z.string().optional(),
     /** Milliseconds until the caller may retry, when the error is a rate limit. */
     retryAfterMs: z.number().optional(),
+    /**
+     * Serialized GroupCapError detail; present only with
+     * `code: 'GROUP_CAP_EXCEEDED'` (see GroupCapErrorInfoSchema below).
+     * Declared here so bus-side validation never strips cap details.
+     */
+    scope: z.enum(['groups', 'items']).optional(),
+    limit: z.number().optional(),
   }),
 ]);
 export type MessageResponse<T = unknown> =
   | { success: true; data: T }
-  | { success: false; error: string; code?: string; retryAfterMs?: number };
+  | {
+      success: false;
+      error: string;
+      code?: string;
+      retryAfterMs?: number;
+      scope?: 'groups' | 'items';
+      limit?: number;
+    };
 
 /**
  * Type-safe message handler function
@@ -186,6 +206,211 @@ export interface PageRestorationStatusPayload {
   anchoredCount: number;
   unanchoredIds: string[];
 }
+
+/**
+ * Page Groups IPC channels (plan Phase 1 Task 1.5, ADR-032 §8).
+ *
+ * - GROUPS_LIST: `{}` -> `{ groups, items }` (live rows only, position-ordered).
+ * - GROUP_GET: `{ id }` -> `{ group, items }` or `GROUP_NOT_FOUND`.
+ * - GROUP_MEMBERSHIP_FOR_URL: `{ url }` -> `{ memberships }` for the Home chip.
+ * - GROUP_MUTATE: discriminated `{ command, ... }` mirroring GroupService
+ *   commands. Cap failures serialize as `{ success: false,
+ *   code: 'GROUP_CAP_EXCEEDED', scope, limit }` (see GroupCapErrorInfoSchema).
+ */
+export const GROUPS_LIST = 'GROUPS_LIST' as const;
+export const GROUP_GET = 'GROUP_GET' as const;
+export const GROUP_MEMBERSHIP_FOR_URL = 'GROUP_MEMBERSHIP_FOR_URL' as const;
+export const GROUP_MUTATE = 'GROUP_MUTATE' as const;
+export const GROUP_OPEN_IN_BROWSER = 'GROUP_OPEN_IN_BROWSER' as const;
+export const EXTENSION_GET_BROWSER_TAB_GROUPS = 'EXTENSION_GET_BROWSER_TAB_GROUPS' as const;
+export const EXTENSION_FOCUS_TAB_GROUP = 'EXTENSION_FOCUS_TAB_GROUP' as const;
+export const GROUPS_IMPORT_BROWSER_TABS = 'GROUPS_IMPORT_BROWSER_TABS' as const;
+export const GROUPS_DISABLE_BROWSER_SYNC = 'GROUPS_DISABLE_BROWSER_SYNC' as const;
+
+export const BrowserTabGroupSummarySchema = z.object({
+  id: z.number().int(),
+  title: z.string(),
+  color: GroupColorSchema,
+  tabCount: z.number().int().nonnegative(),
+  validUrls: z.array(z.string()),
+  skippedCount: z.number().int().nonnegative(),
+});
+export type BrowserTabGroupSummary = z.infer<typeof BrowserTabGroupSummarySchema>;
+
+export const ExtensionGetBrowserTabGroupsPayloadSchema = z.object({}).optional();
+export type ExtensionGetBrowserTabGroupsPayload = z.infer<
+  typeof ExtensionGetBrowserTabGroupsPayloadSchema
+>;
+
+export const ExtensionGetBrowserTabGroupsResponseSchema = z.object({
+  ok: z.boolean(),
+  groups: z.array(BrowserTabGroupSummarySchema).optional(),
+  error: z.string().optional(),
+});
+export type ExtensionGetBrowserTabGroupsResponse = z.infer<
+  typeof ExtensionGetBrowserTabGroupsResponseSchema
+>;
+
+export const ExtensionFocusTabGroupPayloadSchema = z.object({
+  browserGroupId: z.number().int(),
+});
+export type ExtensionFocusTabGroupPayload = z.infer<
+  typeof ExtensionFocusTabGroupPayloadSchema
+>;
+
+export const ExtensionFocusTabGroupResponseSchema = z.object({
+  ok: z.boolean(),
+  error: z.string().optional(),
+});
+export type ExtensionFocusTabGroupResponse = z.infer<
+  typeof ExtensionFocusTabGroupResponseSchema
+>;
+
+export const GroupsImportBrowserTabsPayloadSchema = z.object({
+  browserGroupIds: z.array(z.number().int()).optional(),
+});
+export type GroupsImportBrowserTabsPayload = z.infer<
+  typeof GroupsImportBrowserTabsPayloadSchema
+>;
+
+export const GroupsImportBrowserTabsResponseSchema = z.object({
+  importedCount: z.number().int().nonnegative(),
+});
+export type GroupsImportBrowserTabsResponse = z.infer<
+  typeof GroupsImportBrowserTabsResponseSchema
+>;
+
+export const GroupOpenInBrowserPayloadSchema = z.object({
+  groupId: z.string().uuid(),
+  force: z.boolean().optional(),
+});
+export type GroupOpenInBrowserPayload = z.infer<typeof GroupOpenInBrowserPayloadSchema>;
+
+export const GroupOpenInBrowserResponseSchema = z.object({
+  ok: z.boolean(),
+  needsConfirm: z.boolean().optional(),
+  tabCount: z.number().int().nonnegative().optional(),
+  browserGroupId: z.number().int().optional(),
+  error: z.string().optional(),
+});
+export type GroupOpenInBrowserResponse = z.infer<typeof GroupOpenInBrowserResponseSchema>;
+
+export const GroupsListPayloadSchema = z.object({});
+export type GroupsListPayload = z.infer<typeof GroupsListPayloadSchema>;
+
+export const GroupGetPayloadSchema = z.object({
+  id: z.string().min(1),
+});
+export type GroupGetPayload = z.infer<typeof GroupGetPayloadSchema>;
+
+export const GroupMembershipForUrlPayloadSchema = z.object({
+  url: z.string().min(1).max(2048),
+});
+export type GroupMembershipForUrlPayload = z.infer<
+  typeof GroupMembershipForUrlPayloadSchema
+>;
+
+export const GroupMoveDirectionSchema = z.enum(['top', 'up', 'down']);
+export type GroupMoveDirection = z.infer<typeof GroupMoveDirectionSchema>;
+
+/**
+ * Discriminated command payload mirroring GroupService commands 1:1.
+ * Handlers validate with this schema and return INVALID_PAYLOAD on mismatch.
+ */
+export const GroupMutatePayloadSchema = z.discriminatedUnion('command', [
+  z.object({
+    command: z.literal('createGroup'),
+    name: z.string(),
+    color: GroupColorSchema.optional(),
+  }),
+  z.object({
+    command: z.literal('renameGroup'),
+    id: z.string().min(1),
+    name: z.string(),
+  }),
+  z.object({
+    command: z.literal('recolorGroup'),
+    id: z.string().min(1),
+    color: GroupColorSchema,
+  }),
+  z.object({
+    command: z.literal('deleteGroup'),
+    id: z.string().min(1),
+    closeTabs: z.boolean().optional(),
+  }),
+  z.object({ command: z.literal('restoreGroup'), id: z.string().min(1) }),
+  z.object({
+    command: z.literal('moveGroup'),
+    id: z.string().min(1),
+    to: GroupMoveDirectionSchema,
+  }),
+  z.object({
+    command: z.literal('addPage'),
+    groupId: z.string().min(1),
+    url: z.string().min(1).max(2048),
+    title: z.string().max(500).nullable().optional(),
+    faviconUrl: z.string().max(2048).nullable().optional(),
+  }),
+  z.object({
+    command: z.literal('addDomain'),
+    groupId: z.string().min(1),
+    hostname: z.string().min(1).max(255),
+    includeSubdomains: z.boolean().optional(),
+  }),
+  z.object({
+    command: z.literal('removeItem'),
+    groupId: z.string().min(1),
+    itemId: z.string().min(1),
+  }),
+  z.object({
+    command: z.literal('restoreItem'),
+    groupId: z.string().min(1),
+    itemId: z.string().min(1),
+  }),
+  z.object({
+    command: z.literal('moveItem'),
+    groupId: z.string().min(1),
+    itemId: z.string().min(1),
+    to: GroupMoveDirectionSchema,
+  }),
+]);
+export type GroupMutatePayload = z.infer<typeof GroupMutatePayloadSchema>;
+
+/** Serialized GroupCapError: travels on the error envelope next to `code`. */
+export const GroupCapErrorInfoSchema = z.object({
+  scope: z.enum(['groups', 'items']),
+  limit: z.number().int().positive(),
+});
+export type GroupCapErrorInfo = z.infer<typeof GroupCapErrorInfoSchema>;
+
+export const GroupsListResponseSchema = z.object({
+  groups: z.array(PageGroupSchema),
+  items: z.array(PageGroupItemSchema),
+});
+export type GroupsListResponse = z.infer<typeof GroupsListResponseSchema>;
+
+export const GroupGetResponseSchema = z.object({
+  group: PageGroupSchema,
+  items: z.array(PageGroupItemSchema),
+});
+export type GroupGetResponse = z.infer<typeof GroupGetResponseSchema>;
+
+export const GroupMembershipResponseSchema = z.object({
+  memberships: z.array(
+    z.object({
+      group: PageGroupSchema,
+      viaHostname: z.string().nullable(),
+    })
+  ),
+});
+export type GroupMembershipResponse = z.infer<typeof GroupMembershipResponseSchema>;
+
+/** Group commands set `group`, item commands set `item`. */
+export const GroupMutateResponseSchema = z.object({
+  group: PageGroupSchema.optional(),
+  item: PageGroupItemSchema.optional(),
+});
+export type GroupMutateResponse = z.infer<typeof GroupMutateResponseSchema>;
 
 /**
  * Validates message target

@@ -183,6 +183,14 @@ export const EventName = {
   REMOTE_HIGHLIGHT_UPDATED: 'remote:highlight:updated',
   REMOTE_HIGHLIGHT_DELETED: 'remote:highlight:deleted',
 
+  // Remote Page Groups Changes (Real-Time Sync, Phase 2 Task 2.3)
+  REMOTE_GROUP_CREATED: 'remote:group:created',
+  REMOTE_GROUP_UPDATED: 'remote:group:updated',
+  REMOTE_GROUP_DELETED: 'remote:group:deleted',
+  REMOTE_GROUP_ITEM_CREATED: 'remote:group-item:created',
+  REMOTE_GROUP_ITEM_UPDATED: 'remote:group-item:updated',
+  REMOTE_GROUP_ITEM_DELETED: 'remote:group-item:deleted',
+
   // Network
   NETWORK_STATUS_CHANGED: 'network:status:changed',
 

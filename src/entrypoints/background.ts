@@ -17,6 +17,8 @@ import type { Container } from '@/background/di/container';
 import type { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import { registerBillingHandlers } from '@/background/services/billing-handlers';
 import { clearHighlightData } from '@/background/services/clear-highlight-data';
+import { registerGroupHandlers } from '@/background/services/group-handlers';
+import type { TabGroupSyncService } from '@/background/services/tab-group-sync-service';
 import type { HighlightDeleteService } from '@/background/services/highlight-delete-service';
 import { type DeleteRequest } from '@/background/services/highlight-delete-service';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
@@ -24,6 +26,7 @@ import type { IDeviceLibraryUpload } from '@/background/services/interfaces/i-de
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
 import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
 import { notifyLibrarySyncProgress } from '@/background/services/library-sync-progress';
+
 import type { AiOrchestrator } from '@/background/services/llm/ai-orchestrator';
 import type { LlmKeyStoreHolder } from '@/background/services/llm/llm-key-store-holder';
 import { resolveConfiguredProvider } from '@/background/services/llm/llm-provider-factory';
@@ -34,6 +37,12 @@ import { registerOAuthGrantHandlers } from '@/background/services/oauth-grant-ha
 import { resolveBackgroundPaidActive } from '@/background/services/resolve-paid-active';
 import { createScopedHighlightQueryService } from '@/background/services/scoped-highlight-query';
 import type { TagService } from '@/background/services/tag-service';
+import type {
+  GroupCloudEntity,
+  GroupCloudOp,
+} from '@/background/services/group-service';
+import type { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
+import type { OfflineQueueService } from '@/background/services/offline-queue-service';
 import { authStateResponseData } from '@/shared/auth/auth-state-payload';
 import {
   broadcastAuthSessionCleared,
@@ -63,7 +72,9 @@ import {
 import { MODE_STORAGE_KEY } from '@/shared/constants/mode-storage';
 import { toExportableHighlight, type ExportScope } from '@/shared/highlight-export';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
+import type { IGroupRepository } from '@/shared/repositories/i-group-repository';
 import type { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
+import type { PageGroup, PageGroupItem } from '@/shared/types/page-group';
 import {
   SyncAuthSessionPayloadSchema,
   EmailOnlyPayloadSchema,
@@ -641,7 +652,15 @@ export default defineBackground({
       messageBus.subscribe(DEVICE_UPLOAD_PREVIEW, async () => {
         try {
           if (!authManager.isAuthenticated) {
-            return { success: true, data: { pendingCount: 0, email: null } };
+            return {
+              success: true,
+              data: {
+                pendingCount: 0,
+                pendingGroupCount: 0,
+                pendingGroupItemCount: 0,
+                email: null,
+              },
+            };
           }
           const preview = await deviceLibraryUpload.preview();
           return { success: true, data: preview };
@@ -680,6 +699,8 @@ export default defineBackground({
                 skippedCount: result.skippedCount,
                 failedCount: result.failedCount,
                 tagsCopiedCount: result.tagsCopiedCount,
+                groupsCopiedCount: result.groupsCopiedCount,
+                groupItemsCopiedCount: result.groupItemsCopiedCount,
               });
             })
             .catch(async (error: unknown) => {
@@ -1034,6 +1055,35 @@ export default defineBackground({
         getSupabase: () => container.resolve<SupabaseSDKClient>('_supabaseSDK'),
         logger,
       });
+      registerGroupHandlers({
+        messageBus,
+        authManager,
+        basicGroupRepository:
+          container.resolve<IGroupRepository>('basicGroupRepository'),
+        proGroupRepository: container.resolve<IGroupRepository>('proGroupRepository'),
+        logger,
+        tabGroupSyncService:
+          container.resolve<TabGroupSyncService>('tabGroupSyncService'),
+        // Task 2.3 carry-over from 2.2 review: plug cloud sync into the
+        // live IPC path, else GroupService dual-write cannot fire.
+        sync: {
+          cloudRepository: container.resolve<IGroupRepository>(
+            'supabaseGroupRepository'
+          ),
+          isAuthenticated: () => authManager.isAuthenticated,
+          echoTracker:
+            container.resolve<LocalWriteEchoTracker>('localWriteEchoTracker'),
+          enqueueOperation: (
+            entity: GroupCloudEntity,
+            type: GroupCloudOp,
+            targetId: string,
+            payload: PageGroup | PageGroupItem
+          ) =>
+            container
+              .resolve<OfflineQueueService>('offlineQueueService')
+              .enqueue(type, targetId, payload, entity),
+        },
+      });
       registerOAuthGrantHandlers({
         messageBus,
         authManager,
@@ -1057,7 +1107,7 @@ export default defineBackground({
 
       // Fallback listener to respond to messages when DI container failed
       chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        logger.error('[FALLBACK] Received message during failed state', undefined, {
+        logger.error('[FALLBACK] Received message during failed state', err, {
           type: message.type,
           senderId: sender.id,
         });

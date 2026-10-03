@@ -90,10 +90,26 @@ export class ChromeMessageBus implements IMessageBus {
    */
   private setupMessageListener(): void {
     this.messageListener = (message, sender, sendResponse) => {
+      // Defensively normalize incoming messages from extension callers
+      let normalizedMessage = message;
+      if (typeof message === 'object' && message !== null) {
+        const obj = message as Record<string, unknown>;
+        if (typeof obj['type'] === 'string' && obj['type'].length > 0) {
+          normalizedMessage = {
+            payload: obj['payload'] !== undefined ? obj['payload'] : {},
+            timestamp:
+              typeof obj['timestamp'] === 'number' && obj['timestamp'] > 0
+                ? obj['timestamp']
+                : Date.now(),
+            ...obj,
+          };
+        }
+      }
+
       // Validate message structure
       let validatedMessage: Message;
       try {
-        validatedMessage = validateMessage(message);
+        validatedMessage = validateMessage(normalizedMessage);
       } catch (error) {
         this.logger.warn('Invalid message received', {
           message,
