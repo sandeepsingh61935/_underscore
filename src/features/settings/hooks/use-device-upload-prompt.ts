@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { previewHasPending } from '@/background/services/interfaces/i-device-library-upload';
 import { useUploadFromDevice } from '@/features/collections/hooks/use-upload-from-device';
 import {
   DEVICE_UPLOAD_PROMPT_KEY,
@@ -20,6 +21,8 @@ export function useDeviceUploadPrompt(isAuthenticated: boolean): {
   open: boolean;
   email: string | null;
   pendingCount: number;
+  pendingGroupCount: number;
+  pendingGroupItemCount: number;
   isUploading: boolean;
   error: string | null;
   dismiss: () => void;
@@ -29,6 +32,8 @@ export function useDeviceUploadPrompt(isAuthenticated: boolean): {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingGroupCount, setPendingGroupCount] = useState(0);
+  const [pendingGroupItemCount, setPendingGroupItemCount] = useState(0);
 
   const tryOpen = useCallback(async (): Promise<void> => {
     if (!isAuthenticated) return;
@@ -37,12 +42,14 @@ export function useDeviceUploadPrompt(isAuthenticated: boolean): {
     const flagged = await readDeviceUploadPromptPending();
     if (!flagged) return;
     const data = await preview();
-    if (!data || data.pendingCount <= 0) {
+    if (!data || !previewHasPending(data)) {
       await setDeviceUploadPromptPending(false);
       return;
     }
     setEmail(data.email);
     setPendingCount(data.pendingCount);
+    setPendingGroupCount(data.pendingGroupCount);
+    setPendingGroupItemCount(data.pendingGroupItemCount);
     setOpen(true);
   }, [isAuthenticated, preview]);
 
@@ -87,6 +94,8 @@ export function useDeviceUploadPrompt(isAuthenticated: boolean): {
     open,
     email,
     pendingCount,
+    pendingGroupCount,
+    pendingGroupItemCount,
     isUploading,
     error,
     dismiss,

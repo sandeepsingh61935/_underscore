@@ -8,21 +8,49 @@ import type { SupabaseHighlightRepository } from '@/background/repositories/supa
 import type {
   CloudHydrationProgress,
   CloudHydrationResult,
+  GroupHydrationStats,
   ICloudHydrationService,
 } from '@/background/services/interfaces/i-cloud-hydration-service';
 import { notifyLibraryDataChanged } from '@/background/services/library-change-notifier';
-import type { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
+import type {
+  GroupSyncCursor,
+  LibrarySyncCursor,
+} from '@/background/services/library-sync-cursor';
 import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { IGroupRepository } from '@/shared/repositories/i-group-repository';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
 import type { ITagRepository } from '@/shared/repositories/i-tag-repository';
 import type { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { PageGroup, PageGroupItem } from '@/shared/types/page-group';
+import { mergeRow } from '@/shared/utils/page-group-merge';
+import { tombstonePurgeCutoff } from '@/shared/utils/page-group-purge';
 import {
   highlightTimestampMs,
   isRemoteHighlightNewer,
 } from '@/shared/utils/supabase-highlight-row';
 
 const LARGE_LIBRARY_WARN_THRESHOLD = 500;
+
+/**
+ * Page Groups side of cloud hydration (plan Phase 2 Task 2.3).
+ * Structural cloud type keeps this decoupled from the Supabase adapter.
+ */
+export interface GroupHydrationDeps {
+  /** Pro local group store (signed-in partition). */
+  proGroupRepository: IGroupRepository;
+  cloudGroupRepository: {
+    findChangedGroupsSince(since: Date | null): Promise<PageGroup[]>;
+    findChangedItemsSince(since: Date | null): Promise<PageGroupItem[]>;
+    /**
+     * Client-fallback cloud purge (Task 2.4). Optional so highlight-only
+     * tests and fakes stay structural; the live SupabaseGroupRepository
+     * provides it and the tombstone-only DELETE policy authorizes it.
+     */
+    purgeTombstones?(olderThan: Date): Promise<number>;
+  };
+  groupSyncCursor: GroupSyncCursor;
+}
 
 export class CloudHydrationService implements ICloudHydrationService {
   private hydrationInFlight: Promise<CloudHydrationResult> | null = null;
@@ -35,7 +63,12 @@ export class CloudHydrationService implements ICloudHydrationService {
     private readonly syncCursor: LibrarySyncCursor,
     private readonly logger: ILogger,
     private readonly localTags?: ITagRepository,
-    private readonly cloudTags?: ITagRepository
+    private readonly cloudTags?: ITagRepository,
+    /**
+     * Optional Page Groups hydration (Task 2.3). Absent = highlights-only,
+     * preserving the pre-groups behavior.
+     */
+    private readonly groupDeps?: GroupHydrationDeps
   ) {}
 
   hydrate(onProgress?: CloudHydrationProgress): Promise<CloudHydrationResult> {
@@ -226,7 +259,10 @@ export class CloudHydrationService implements ICloudHydrationService {
       bump();
     }
 
-    report(88, 'tags');
+    report(88, 'groups');
+    const groupStats = await this.hydrateGroups();
+
+    report(90, 'tags');
     await this.hydrateTags(Array.from(localById.keys()));
 
     report(92, 'reloading');
@@ -265,6 +301,7 @@ export class CloudHydrationService implements ICloudHydrationService {
       deletedCount,
       skippedCount,
       failedCount,
+      ...(groupStats ? { groups: groupStats } : {}),
     };
 
     this.logger.info('[CloudHydration] Hydration complete', {
@@ -277,6 +314,151 @@ export class CloudHydrationService implements ICloudHydrationService {
     report(100, 'done');
 
     return result;
+  }
+
+  /**
+   * Incremental Page Groups pull (`updated_at >= cursor`, tombstones
+   * included). Each remote row is resolved against local with the Task 1.2
+   * `mergeRow` and written straight to the Pro store — the same skipSync
+   * semantics as the highlight path (GroupService dual-write is bypassed).
+   * Runs on sign-in hydrate, on realtime connect, and on SYNC_LIBRARY,
+   * because all three funnel through hydrate().
+   */
+  private async hydrateGroups(): Promise<GroupHydrationStats | null> {
+    const stats: GroupHydrationStats = {
+      backfilled: 0,
+      updated: 0,
+      deleted: 0,
+      skipped: 0,
+      failed: 0,
+    };
+
+    const deps = this.groupDeps;
+    if (!deps || !this.authManager.currentUser) {
+      return null;
+    }
+
+    const cursor = await deps.groupSyncCursor.get();
+    this.logger.info('[CloudHydration] Starting groups hydration', {
+      incremental: !!cursor,
+      cursor: cursor?.toISOString(),
+    });
+
+    let cloudGroups: PageGroup[] = [];
+    let cloudItems: PageGroupItem[] = [];
+    try {
+      cloudGroups = await deps.cloudGroupRepository.findChangedGroupsSince(cursor);
+      cloudItems = await deps.cloudGroupRepository.findChangedItemsSince(cursor);
+    } catch (error) {
+      this.logger.error('[CloudHydration] Group fetch failed', error as Error);
+      return { ...stats, failed: 1 };
+    }
+
+    let maxUpdatedAt = cursor?.getTime() ?? 0;
+    const touch = (updatedAt: string): void => {
+      const parsed = Date.parse(updatedAt);
+      if (!Number.isNaN(parsed) && parsed > maxUpdatedAt) {
+        maxUpdatedAt = parsed;
+      }
+    };
+
+    for (const remote of cloudGroups) {
+      if (!this.authManager.currentUser) {
+        this.logger.warn('[CloudHydration] Auth lost mid-hydration; aborting groups');
+        break;
+      }
+      touch(remote.updatedAt);
+      try {
+        const local = await deps.proGroupRepository.getGroup(remote.id);
+        if (!local) {
+          await deps.proGroupRepository.putGroup(remote);
+          stats.backfilled++;
+          continue;
+        }
+        if (mergeRow(local, remote) !== remote) {
+          stats.skipped++;
+          continue;
+        }
+        await deps.proGroupRepository.putGroup(remote);
+        if (remote.deletedAt !== null) {
+          stats.deleted++;
+        } else {
+          stats.updated++;
+        }
+      } catch (error) {
+        stats.failed++;
+        this.logger.error('[CloudHydration] Failed to merge group', error as Error, {
+          id: remote.id,
+        });
+      }
+    }
+
+    for (const remote of cloudItems) {
+      if (!this.authManager.currentUser) {
+        this.logger.warn('[CloudHydration] Auth lost mid-hydration; aborting groups');
+        break;
+      }
+      touch(remote.updatedAt);
+      try {
+        const siblings = await deps.proGroupRepository.listItems(remote.groupId, {
+          includeDeleted: true,
+        });
+        const local = siblings.find((candidate) => candidate.id === remote.id);
+        if (!local) {
+          await deps.proGroupRepository.putItem(remote);
+          stats.backfilled++;
+          continue;
+        }
+        if (mergeRow(local, remote) !== remote) {
+          stats.skipped++;
+          continue;
+        }
+        await deps.proGroupRepository.putItem(remote);
+        if (remote.deletedAt !== null) {
+          stats.deleted++;
+        } else {
+          stats.updated++;
+        }
+      } catch (error) {
+        stats.failed++;
+        this.logger.error('[CloudHydration] Failed to merge group item', error as Error, {
+          id: remote.id,
+        });
+      }
+    }
+
+    if (maxUpdatedAt > 0) {
+      await deps.groupSyncCursor.set(new Date(maxUpdatedAt));
+    } else if (!cursor) {
+      await deps.groupSyncCursor.set(new Date());
+    }
+
+    // Task 2.4 client fallback: hard-delete locally- and cloud-expired
+    // tombstones after every groups hydration. Best-effort — purge failures
+    // are logged and never fail hydration (rows are retried next hydrate).
+    // Safe in both worlds: a no-op when the pg_cron server purge already ran.
+    await this.purgeExpiredGroupTombstones(deps);
+
+    this.logger.info('[CloudHydration] Groups hydration complete', { ...stats });
+    return stats;
+  }
+
+  private async purgeExpiredGroupTombstones(deps: GroupHydrationDeps): Promise<void> {
+    const cutoff = tombstonePurgeCutoff(new Date());
+    try {
+      await deps.proGroupRepository.purgeTombstones(cutoff);
+    } catch (error) {
+      this.logger.warn('[CloudHydration] Local group tombstone purge failed', {
+        error: (error as Error).message,
+      });
+    }
+    try {
+      await deps.cloudGroupRepository.purgeTombstones?.(cutoff);
+    } catch (error) {
+      this.logger.warn('[CloudHydration] Cloud group tombstone purge failed', {
+        error: (error as Error).message,
+      });
+    }
   }
 
   private async hydrateTags(highlightIds: string[]): Promise<void> {

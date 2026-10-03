@@ -8,9 +8,14 @@ import { v4 as uuidv4 } from 'uuid';
 
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
-import type { OfflineOperation } from '@/background/types/offline-queue-types';
+import type {
+  OfflineOperation,
+  OfflineOperationEntity,
+} from '@/background/types/offline-queue-types';
 import type { ILogger } from '@/shared/interfaces/i-logger';
+import type { IGroupRepository } from '@/shared/repositories/i-group-repository';
 import type { HighlightDataV2 } from '@/shared/schemas/highlight-schema';
+import type { PageGroup, PageGroupItem } from '@/shared/types/page-group';
 
 const DB_NAME = 'underscore_offline_queue';
 const DB_VERSION = 1;
@@ -23,7 +28,12 @@ export class OfflineQueueService {
   constructor(
     private readonly cloudRepo: SupabaseHighlightRepository,
     private readonly authManager: IAuthManager,
-    private readonly logger: ILogger
+    private readonly logger: ILogger,
+    /**
+     * Optional cloud adapter for queued group operations (Task 2.2).
+     * Absent = highlight-only queue, preserving the pre-groups behavior.
+     */
+    private readonly groupCloudRepo?: IGroupRepository | null
   ) {
     this.db = openDB(DB_NAME, DB_VERSION, {
       upgrade(db) {
@@ -44,25 +54,28 @@ export class OfflineQueueService {
   }
 
   /**
-   * Enqueue an operation to be retried later
+   * Enqueue an operation to be retried later.
+   * `entity` defaults to `highlight` so existing callers keep working.
    */
   async enqueue(
     type: OfflineOperation['type'],
     targetId: string,
-    payload?: any
+    payload?: any,
+    entity: OfflineOperationEntity = 'highlight'
   ): Promise<void> {
     const op: OfflineOperation = {
       id: uuidv4(),
       type,
       targetId,
       payload,
+      entity,
       timestamp: Date.now(),
       retryCount: 0,
     };
 
     const db = await this.db;
     await db.add(STORE_NAME, op);
-    this.logger.info('[OfflineQueue] Enqueued operation', { type, targetId });
+    this.logger.info('[OfflineQueue] Enqueued operation', { type, targetId, entity });
   }
 
   /**
@@ -141,7 +154,25 @@ export class OfflineQueueService {
     this.logger.debug('[OfflineQueue] Executing operation', {
       type: op.type,
       targetId: op.targetId,
+      entity: op.entity ?? 'highlight',
     });
+
+    // Group entities replay as full-row upserts (putGroup/putItem carry
+    // creates, updates, and tombstones alike); the queued `type` is kept
+    // for observability only.
+    if (op.entity === 'group' || op.entity === 'group_item') {
+      if (!this.groupCloudRepo) {
+        throw new Error(
+          `No group cloud repository wired for queued ${op.entity} operation ${op.id}`
+        );
+      }
+      if (op.entity === 'group') {
+        await this.groupCloudRepo.putGroup(op.payload as PageGroup);
+      } else {
+        await this.groupCloudRepo.putItem(op.payload as PageGroupItem);
+      }
+      return;
+    }
 
     switch (op.type) {
       case 'add':
