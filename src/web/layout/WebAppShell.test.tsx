@@ -191,4 +191,47 @@ describe('WebAppShell', () => {
     );
     expect(document.querySelector('[data-od-id="ext-notice-signin"]')).toBeNull();
   });
+
+  it('renders theme toggle in footer and toggles theme on click', () => {
+    const setThemeMock = vi.fn();
+    (useApp as ReturnType<typeof vi.fn>).mockReturnValue({
+      isAuthenticated: false,
+      user: null,
+      theme: 'light',
+      setTheme: setThemeMock,
+    });
+
+    renderShell('/home');
+    const themeBtn = document.querySelector('[data-od-id="theme-toggle"]');
+    expect(themeBtn).toBeTruthy();
+    expect(themeBtn?.getAttribute('aria-label')).toBe('Switch to dark theme');
+
+    fireEvent.click(themeBtn!);
+    expect(setThemeMock).toHaveBeenCalledWith('dark');
+  });
+
+  it('renders settings link with data-od-id nav-settings', () => {
+    renderShell('/home');
+    const navSettings = document.querySelector('[data-od-id="nav-settings"]');
+    expect(navSettings).toBeTruthy();
+    expect(navSettings?.getAttribute('href')).toBe('/settings');
+  });
+
+  it('provides title tooltips on rail items when sidebar is collapsed', () => {
+    renderShell('/home');
+    const collapse = screen.getByRole('button', { name: /collapse sidebar/i });
+    fireEvent.click(collapse);
+
+    const themeBtn = document.querySelector('[data-od-id="theme-toggle"]');
+    expect(themeBtn?.getAttribute('title')).toBe('Switch to dark theme');
+
+    const homeNav = document.querySelector('[data-od-id="nav-home"]');
+    expect(homeNav?.getAttribute('title')).toBe('Home');
+
+    const libNav = document.querySelector('[data-od-id="nav-library"]');
+    expect(libNav?.getAttribute('title')).toBe('Library');
+
+    const settingsNav = document.querySelector('[data-od-id="nav-settings"]');
+    expect(settingsNav?.getAttribute('title')).toBe('Settings');
+  });
 });
