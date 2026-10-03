@@ -3,11 +3,13 @@
  * Separate from the extension's IndexedDB — different browser storage partitions.
  */
 
+import type { PageGroup, PageGroupItem } from '@/shared/types/page-group';
 import type { WebHighlight } from '@/web/lib/aggregateLibrary';
 
 const DB_NAME = 'underscore_web_library';
 const STORE = 'highlights';
-const DB_VERSION = 1;
+const GROUPS_STORE = 'groups';
+const DB_VERSION = 2;
 
 export type WebLibraryCacheRecord = {
   userId: string;
@@ -22,6 +24,9 @@ function openDb(): Promise<IDBDatabase> {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE, { keyPath: 'userId' });
+      }
+      if (!db.objectStoreNames.contains(GROUPS_STORE)) {
+        db.createObjectStore(GROUPS_STORE, { keyPath: 'userId' });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -58,6 +63,51 @@ export async function readWebLibraryCache(
     const req = tx.objectStore(STORE).get(userId);
     req.onsuccess = () =>
       resolve((req.result as WebLibraryCacheRecord | undefined) ?? null);
+    req.onerror = () => reject(req.error);
+  });
+  db.close();
+  return record;
+}
+
+/** Groups snapshot for warm paint + Realtime merge base (Phase 2 Task 2.5). */
+export type WebGroupsCacheRecord = {
+  userId: string;
+  groups: PageGroup[];
+  itemsByGroup: Record<string, PageGroupItem[]>;
+  savedAt: number;
+};
+
+export async function writeWebGroupsCache(
+  userId: string,
+  groups: PageGroup[],
+  itemsByGroup: Record<string, PageGroupItem[]>
+): Promise<void> {
+  if (typeof indexedDB === 'undefined' || !userId) return;
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(GROUPS_STORE, 'readwrite');
+    tx.objectStore(GROUPS_STORE).put({
+      userId,
+      groups,
+      itemsByGroup,
+      savedAt: Date.now(),
+    } satisfies WebGroupsCacheRecord);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function readWebGroupsCache(
+  userId: string
+): Promise<WebGroupsCacheRecord | null> {
+  if (typeof indexedDB === 'undefined' || !userId) return null;
+  const db = await openDb();
+  const record = await new Promise<WebGroupsCacheRecord | null>((resolve, reject) => {
+    const tx = db.transaction(GROUPS_STORE, 'readonly');
+    const req = tx.objectStore(GROUPS_STORE).get(userId);
+    req.onsuccess = () =>
+      resolve((req.result as WebGroupsCacheRecord | undefined) ?? null);
     req.onerror = () => reject(req.error);
   });
   db.close();

@@ -15,6 +15,8 @@ export interface LibraryTransferJob {
   skippedCount?: number;
   failedCount?: number;
   tagsCopiedCount?: number;
+  groupsCopiedCount?: number;
+  groupItemsCopiedCount?: number;
   backfilledCount?: number;
   updatedCount?: number;
   deletedCount?: number;

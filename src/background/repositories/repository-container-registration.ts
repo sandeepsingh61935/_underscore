@@ -8,22 +8,37 @@ import type { SupabaseClient } from '@/background/api/supabase-client';
 import type { IAuthManager } from '@/background/auth/interfaces/i-auth-manager';
 import type { Container } from '@/background/di/container';
 import { DualWriteRepository } from '@/background/repositories/dual-write-repository';
+import { IndexedDBGroupRepository } from '@/background/repositories/indexed-db-group-repository';
 import { IndexedDBHighlightRepository } from '@/background/repositories/indexed-db-highlight-repository';
 import { IndexedDBTagRepository } from '@/background/repositories/indexed-db-tag-repository';
+import { SupabaseGroupRepository } from '@/background/repositories/supabase-group-repository';
 import { SupabaseHighlightRepository } from '@/background/repositories/supabase-highlight-repository';
 import { SupabaseTagRepository } from '@/background/repositories/supabase-tag-repository';
 import { BackgroundHighlightOrchestrator } from '@/background/services/background-highlight-orchestrator';
 import { CloudHydrationService } from '@/background/services/cloud-hydration-service';
 import { DeviceLibraryUpload } from '@/background/services/device-library-upload';
+import { DeviceIdService } from '@/background/services/device-id-service';
 import { HighlightCloudDeleteAdapter } from '@/background/services/highlight-cloud-delete-adapter';
 import { HighlightDeleteService } from '@/background/services/highlight-delete-service';
 import type { ICloudHydrationService } from '@/background/services/interfaces/i-cloud-hydration-service';
 import type { IDeviceLibraryUpload } from '@/background/services/interfaces/i-device-library-upload';
-import { LibrarySyncCursor } from '@/background/services/library-sync-cursor';
+import { GroupSyncCursor, LibrarySyncCursor } from '@/background/services/library-sync-cursor';
+import {
+  TabGroupBindingStore,
+  tabGroupBindingStore,
+} from '@/background/services/tab-group-binding-store';
+import { TabGroupSyncService } from '@/background/services/tab-group-sync-service';
 import { LocalWriteEchoTracker } from '@/background/services/local-write-echo-tracker';
 import { OfflineQueueService } from '@/background/services/offline-queue-service';
+import { RealtimeGroupIngestService } from '@/background/services/realtime-group-ingest-service';
 import { RealtimeHighlightIngestService } from '@/background/services/realtime-highlight-ingest-service';
+import {
+  createScopedGroupService,
+  type GroupCloudEntity,
+  type GroupCloudOp,
+} from '@/background/services/group-service';
 import { TagService } from '@/background/services/tag-service';
+import type { PageGroup, PageGroupItem } from '@/shared/types/page-group';
 import {
   BASIC_HIGHLIGHT_DB_NAME,
   PRO_HIGHLIGHT_DB_NAME,
@@ -31,6 +46,7 @@ import {
 import type { IEventBus } from '@/shared/interfaces/i-event-bus';
 import type { IMessageBus } from '@/shared/interfaces/i-message-bus';
 import type { IHighlightRepository } from '@/shared/repositories/i-highlight-repository';
+import type { IGroupRepository } from '@/shared/repositories/i-group-repository';
 import type { ITagRepository } from '@/shared/repositories/i-tag-repository';
 import { RepositoryFacade } from '@/shared/repositories/repository-facade';
 import { ScopedHighlightRepository } from '@/shared/repositories/scoped-highlight-repository';
@@ -135,13 +151,21 @@ export function registerRepositoryComponents(container: Container): void {
     );
     const authManager = container.resolve<IAuthManager>('authManager');
     const logger = container.resolve<ILogger>('logger');
+    // Task 2.3 wiring: group cloud repo so queued group/group_item
+    // operations replay via putGroup/putItem (Task 2.2 queue support).
+    // Lazy resolve — registered below but available before first use.
+    const groupCloudRepo = container.resolve<IGroupRepository>(
+      'supabaseGroupRepository' as never
+    );
 
-    return new OfflineQueueService(cloudRepo, authManager, logger);
+    return new OfflineQueueService(cloudRepo, authManager, logger, groupCloudRepo);
   });
 
   container.registerSingleton('localWriteEchoTracker', () => new LocalWriteEchoTracker());
 
   container.registerSingleton('librarySyncCursor', () => new LibrarySyncCursor());
+
+  container.registerSingleton('groupSyncCursor', () => new GroupSyncCursor());
 
   // ==================== Dual-Write Repository (Primary) ====================
 
@@ -204,6 +228,16 @@ export function registerRepositoryComponents(container: Container): void {
       'supabaseTagRepository' as never
     );
 
+    // Task 2.3: Page Groups incremental hydration rides on every hydrate()
+    // (sign-in, realtime connect, SYNC_LIBRARY).
+    const proGroups = container.resolve<IGroupRepository>(
+      'proGroupRepository' as never
+    );
+    const cloudGroups = container.resolve<SupabaseGroupRepository>(
+      'supabaseGroupRepository' as never
+    );
+    const groupCursor = container.resolve<GroupSyncCursor>('groupSyncCursor' as never);
+
     return new CloudHydrationService(
       authManager,
       highlightRepository,
@@ -212,7 +246,12 @@ export function registerRepositoryComponents(container: Container): void {
       syncCursor,
       logger,
       proTags,
-      cloudTags
+      cloudTags,
+      {
+        proGroupRepository: proGroups,
+        cloudGroupRepository: cloudGroups,
+        groupSyncCursor: groupCursor,
+      }
     );
   });
 
@@ -233,6 +272,19 @@ export function registerRepositoryComponents(container: Container): void {
       echoTracker,
       logger
     );
+  });
+
+  container.registerSingleton('realtimeGroupIngestService', () => {
+    const eventBus = container.resolve<IEventBus>('eventBus');
+    const proGroups = container.resolve<IGroupRepository>(
+      'proGroupRepository' as never
+    );
+    const echoTracker = container.resolve<LocalWriteEchoTracker>(
+      'localWriteEchoTracker' as any
+    );
+    const logger = container.resolve<ILogger>('logger');
+
+    return new RealtimeGroupIngestService(eventBus, proGroups, echoTracker, logger);
   });
 
   container.registerSingleton<BackgroundHighlightOrchestrator>(
@@ -277,6 +329,33 @@ export function registerRepositoryComponents(container: Container): void {
     return new SupabaseTagRepository(supabaseClient, authManager, logger);
   });
 
+  container.registerSingleton<IGroupRepository>('supabaseGroupRepository', () => {
+    const supabaseClient = container.resolve<SupabaseClient>('_supabaseClient');
+    const authManager = container.resolve<IAuthManager>('authManager');
+    const logger = container.resolve<ILogger>('logger');
+    return new SupabaseGroupRepository(supabaseClient, authManager, logger);
+  });
+
+  // ==================== Group Repositories (ADR-032) ====================
+
+  /**
+   * Basic local group store — guest / logged-out persistence.
+   * Shares the basic highlight database; group stores added at v3.
+   */
+  container.registerSingleton<IGroupRepository>('basicGroupRepository', () => {
+    const logger = container.resolve<ILogger>('logger');
+    return new IndexedDBGroupRepository(logger, BASIC_HIGHLIGHT_DB_NAME);
+  });
+
+  /**
+   * Pro local group store — account offline cache while signed in.
+   * Shares the pro highlight database; group stores added at v3.
+   */
+  container.registerSingleton<IGroupRepository>('proGroupRepository', () => {
+    const logger = container.resolve<ILogger>('logger');
+    return new IndexedDBGroupRepository(logger, PRO_HIGHLIGHT_DB_NAME);
+  });
+
   container.registerSingleton<TagService>('tagService', () => {
     const scopedTagRepository = container.resolve<ScopedTagRepository>(
       'scopedTagRepository' as never
@@ -310,6 +389,15 @@ export function registerRepositoryComponents(container: Container): void {
     const cloudTags = container.resolve<SupabaseTagRepository>(
       'supabaseTagRepository' as never
     );
+    const basicGroups = container.resolve<IGroupRepository>(
+      'basicGroupRepository' as never
+    );
+    const proGroups = container.resolve<IGroupRepository>(
+      'proGroupRepository' as never
+    );
+    const cloudGroups = container.resolve<IGroupRepository>(
+      'supabaseGroupRepository' as never
+    );
     const offlineQueue = container.resolve<OfflineQueueService>('offlineQueueService');
     const repositoryFacade = container.resolve<RepositoryFacade>('repositoryFacade');
     const logger = container.resolve<ILogger>('logger');
@@ -322,9 +410,74 @@ export function registerRepositoryComponents(container: Container): void {
       basicTags,
       proTags,
       cloudTags,
+      basicGroups,
+      proGroups,
+      cloudGroups,
       offlineQueue,
       repositoryFacade,
       logger
     );
+  });
+
+  // ==================== Tab Group Mirroring (Phase 3) ====================
+
+  container.registerSingleton<TabGroupBindingStore>(
+    'tabGroupBindingStore',
+    () => tabGroupBindingStore
+  );
+
+  container.registerSingleton<DeviceIdService>(
+    'deviceIdService',
+    () => new DeviceIdService()
+  );
+
+  container.registerSingleton<TabGroupSyncService>('tabGroupSyncService', () => {
+    const authManager = container.resolve<IAuthManager>('authManager');
+    const basicGroups = container.resolve<IGroupRepository>('basicGroupRepository');
+    const proGroups = container.resolve<IGroupRepository>('proGroupRepository');
+    const bindingStore = container.resolve<TabGroupBindingStore>('tabGroupBindingStore');
+    const deviceIdService = container.resolve<DeviceIdService>('deviceIdService');
+    const logger = container.resolve<ILogger>('logger');
+    const eventBus = container.resolve<IEventBus>('eventBus');
+    const cloudRepository = container.resolve<IGroupRepository>(
+      'supabaseGroupRepository' as never
+    );
+    const echoTracker = container.resolve<LocalWriteEchoTracker>(
+      'localWriteEchoTracker' as never
+    );
+    const offlineQueue = container.resolve<OfflineQueueService>('offlineQueueService');
+
+    const groupServiceFactory = (isAuthenticated: boolean) =>
+      createScopedGroupService({
+        isAuthenticated,
+        basicRepository: basicGroups,
+        proRepository: proGroups,
+        logger,
+        sync: {
+          cloudRepository,
+          isAuthenticated: () => authManager.isAuthenticated,
+          echoTracker,
+          enqueueOperation: (
+            entity: GroupCloudEntity,
+            type: GroupCloudOp,
+            targetId: string,
+            payload: PageGroup | PageGroupItem
+          ) => offlineQueue.enqueue(type, targetId, payload, entity),
+        },
+      });
+
+    return new TabGroupSyncService({
+      authManager,
+      basicGroups,
+      proGroups,
+      bindingStore,
+      deviceIdService,
+      logger,
+      eventBus,
+      groupServiceFactory,
+      cloudGroups: cloudRepository,
+      echoTracker,
+      offlineQueue,
+    });
   });
 }
